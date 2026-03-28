@@ -1,82 +1,102 @@
 import { NextResponse } from "next/server";
 import { ethers } from "ethers";
 
-// ── Per-address funded tracking ───────────────────────────────────────────────
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
 const addressLastFunded = new Map<string, number>();
 
 export async function POST(request: Request) {
+  let body: unknown;
   try {
-    const { address } = await request.json();
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  try {
+    const address =
+      body && typeof body === "object" && "address" in body
+        ? (body as { address?: string }).address
+        : undefined;
 
     if (!address || !ethers.isAddress(address)) {
-      return NextResponse.json({ error: "Geçerli bir adres gerekli" }, { status: 400 });
+      return NextResponse.json({ error: "A valid address is required" }, { status: 400 });
     }
 
     const normalizedAddress = address.toLowerCase();
 
-    // ── Setup provider & funder wallet ───────────────────────────────────────
     const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || "https://testnet-rpc.monad.xyz";
     const provider = new ethers.JsonRpcProvider(rpcUrl);
 
-    const funderPrivateKey = process.env.FUNDING_PRIVATE_KEY;
-    if (!funderPrivateKey) {
-      return NextResponse.json({ error: "Sunucu yapılandırma hatası" }, { status: 500 });
+    const rawKey = process.env.FUNDING_PRIVATE_KEY?.trim();
+    if (!rawKey) {
+      console.error("FUNDING_PRIVATE_KEY is not set");
+      return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
     }
-    const funderWallet = new ethers.Wallet(funderPrivateKey, provider);
 
-    // ── Check actual on-chain balance first ──────────────────────────────────
+    let funderWallet: ethers.Wallet;
+    try {
+      funderWallet = new ethers.Wallet(rawKey, provider);
+    } catch (e) {
+      console.error("Invalid FUNDING_PRIVATE_KEY:", e instanceof Error ? e.message : e);
+      return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
+    }
+
     const balance = await provider.getBalance(address);
     const sendAmount = ethers.parseEther(process.env.FUNDING_AMOUNT_ETH || "1.0");
     const minBalance = ethers.parseEther("0.10");
 
     if (balance >= minBalance) {
-      return NextResponse.json({ success: true, alreadyFunded: true, balance: ethers.formatEther(balance) });
+      return NextResponse.json({
+        success: true,
+        alreadyFunded: true,
+        balance: ethers.formatEther(balance),
+      });
     }
 
-    // ── Per-address rate limit (prevent double-funding same wallet) ───────────
     const rateLimitSeconds = Number(process.env.FUNDING_RATE_LIMIT_SECONDS || 300);
     const lastFunded = addressLastFunded.get(normalizedAddress) ?? 0;
     const elapsed = (Date.now() - lastFunded) / 1000;
 
     if (elapsed < rateLimitSeconds && lastFunded > 0) {
-      // Rate limited BUT wallet is genuinely empty — this is an error state
-      // (wallet must have spent its MON — allow re-funding)
       const waitSeconds = Math.ceil(rateLimitSeconds - elapsed);
       return NextResponse.json(
-        { error: `Rate limited. ${waitSeconds}s bekleyin veya yöneticiye başvurun.`, rateLimited: true },
+        {
+          error: `Rate limited. Wait ${waitSeconds}s or contact the operator.`,
+          rateLimited: true,
+        },
         { status: 429 }
       );
     }
 
-    // ── Check funder balance ─────────────────────────────────────────────────
     const funderBalance = await provider.getBalance(funderWallet.address);
     if (funderBalance < sendAmount + ethers.parseEther("0.02")) {
       console.error("Funder critically low:", ethers.formatEther(funderBalance), "MON");
-      return NextResponse.json({ error: "Kasa yetersiz. Organizatörle iletişime geçin." }, { status: 503 });
+      return NextResponse.json(
+        { error: "Funder balance too low. Contact the operator." },
+        { status: 503 }
+      );
     }
 
-    // ── Send funds ───────────────────────────────────────────────────────────
-    console.log(`Funding ${address} with ${ethers.formatEther(sendAmount)} MON from ${funderWallet.address}`);
+    console.log(
+      `Funding ${address} with ${ethers.formatEther(sendAmount)} MON from ${funderWallet.address}`
+    );
     const tx = await funderWallet.sendTransaction({ to: address, value: sendAmount });
 
-    // Record funding time BEFORE waiting (prevents race conditions with concurrent requests)
     addressLastFunded.set(normalizedAddress, Date.now());
 
-    // Wait for 1 on-chain confirmation
-    const receipt = await tx.wait(1);
-
-    console.log(`Funded ${address} ✓ block=${receipt?.blockNumber} hash=${tx.hash}`);
-
+    // Do not await tx.wait(1) here: Vercel serverless often times out before the tx is
+    // mined. The client already calls waitForBalance() after this response.
     return NextResponse.json({
       success: true,
       txHash: tx.hash,
       amount: ethers.formatEther(sendAmount),
-      blockNumber: receipt?.blockNumber,
+      pending: true,
     });
-
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : String(error);
-    console.error("Fonlama hatası:", msg);
-    return NextResponse.json({ error: "Fonlama başarısız: " + msg.slice(0, 100) }, { status: 500 });
+    console.error("Funding error:", msg);
+    return NextResponse.json({ error: "Funding failed: " + msg.slice(0, 200) }, { status: 500 });
   }
 }
