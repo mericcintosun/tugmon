@@ -1,29 +1,137 @@
+@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap");
 @import "tailwindcss";
-@plugin "daisyui";
 
-/* ── Design tokens ─────────────────────────────────────────────────────────── */
-:root {
-  --font-orbitron: var(--font-orbitron);
-  --red-glow:    rgba(239, 68, 68, 0.45);
-  --blue-glow:   rgba(59, 130, 246, 0.45);
-  --gold-glow:   rgba(234, 179, 8, 0.50);
+/* ── Design system: Kinetic Craftsmanship (DESIGN.md) ─────────────────────── */
+@theme {
+  --color-background: #0d0d18;
+  --color-surface: #0d0d18;
+  --color-surface-dim: #0d0d18;
+  --color-surface-bright: #2b2a3c;
+  --color-surface-container-lowest: #000000;
+  --color-surface-container-low: #12121e;
+  --color-surface-container: #181826;
+  --color-surface-container-high: #1e1e2d;
+  --color-surface-container-highest: #242434;
+  --color-surface-variant: #242434;
+  --color-inverse-surface: #fcf8ff;
+  --color-inverse-on-surface: #555461;
+  --color-inverse-primary: #5e46d1;
+
+  --color-primary: #afa2ff;
+  --color-primary-dim: #745ee9;
+  --color-primary-container: #a192ff;
+  --color-primary-fixed: #a192ff;
+  --color-primary-fixed-dim: #9381ff;
+  --color-on-primary: #2c0097;
+  --color-on-primary-container: #210077;
+  --color-on-primary-fixed: #000000;
+  --color-on-primary-fixed-variant: #2a0091;
+  --color-surface-tint: #afa2ff;
+
+  --color-secondary: #ff67ae;
+  --color-secondary-dim: #ff67ae;
+  --color-secondary-container: #b7006f;
+  --color-secondary-fixed: #ffc0d7;
+  --color-secondary-fixed-dim: #ffaccb;
+  --color-on-secondary: #460027;
+  --color-on-secondary-fixed: #6b003e;
+  --color-on-secondary-fixed-variant: #9e005f;
+  --color-on-secondary-container: #fff5f6;
+
+  --color-tertiary: #a1faff;
+  --color-tertiary-dim: #00e5ee;
+  --color-tertiary-container: #00f4fe;
+  --color-tertiary-fixed: #00f4fe;
+  --color-tertiary-fixed-dim: #00e5ee;
+  --color-on-tertiary: #006165;
+  --color-on-tertiary-container: #00575b;
+  --color-on-tertiary-fixed: #004346;
+  --color-on-tertiary-fixed-variant: #006266;
+
+  --color-error: #ff6e84;
+  --color-error-dim: #d73357;
+  --color-error-container: #a70138;
+  --color-on-error: #490013;
+  --color-on-error-container: #ffb2b9;
+
+  --color-on-background: #e9e6f7;
+  --color-on-surface: #e9e6f7;
+  --color-on-surface-variant: #aba9b9;
+  --color-outline: #757482;
+  --color-outline-variant: #474754;
+
+  --font-family-headline: var(--font-plus-jakarta-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-family-body: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-family-label: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-family-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --radius-sm: 0.125rem;
+  --radius-lg: 0.25rem;
+  --radius-xl: 0.5rem;
+  --radius-3xl: 0.75rem;
+
+  --shadow-patch: 0 24px 48px rgba(175, 162, 255, 0.08);
+  --shadow-hero-qr: 0 0 50px rgba(161, 250, 255, 0.2);
 }
 
-html, body {
-  background: #040408;
-  color: #fff;
-  font-family: var(--font-geist-sans), -apple-system, sans-serif;
+/* ── Legacy alias: tactical numerals were Orbitron → now label (Space Grotesk) ─ */
+.font-orbitron {
+  font-family: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+}
+
+:root {
+  --red-glow: rgba(239, 68, 68, 0.45);
+  --blue-glow: rgba(59, 130, 246, 0.45);
+  --gold-glow: rgba(234, 179, 8, 0.5);
+}
+
+html,
+body {
+  background: var(--color-background);
+  color: var(--color-on-surface);
+  font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
   overflow-x: hidden;
   -webkit-tap-highlight-color: transparent;
 }
 
-/* ── Orbitron utility ──────────────────────────────────────────────────────── */
-.font-orbitron { font-family: var(--font-orbitron), monospace; }
+.stitched-border {
+  outline: 1px dashed var(--color-outline-variant);
+  outline-offset: -8px;
+}
+
+.stitched-border-primary {
+  outline: 1px dashed var(--color-primary);
+  outline-offset: -6px;
+}
+
+.glass-panel {
+  background: rgba(36, 36, 52, 0.4);
+  backdrop-filter: blur(12px);
+}
+
+.input-ghost-border {
+  border: none;
+  border-bottom: 1px dashed var(--color-outline-variant);
+  border-radius: 0;
+  background: transparent;
+}
+
+.input-ghost-border:focus {
+  outline: none;
+  border-bottom-color: var(--color-tertiary);
+  border-bottom-style: solid;
+}
 
 /* ── Pump button rings ─────────────────────────────────────────────────────── */
 @keyframes ring-expand {
-  0%   { transform: scale(1);    opacity: 0.5; }
-  100% { transform: scale(1.7);  opacity: 0; }
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1.7);
+    opacity: 0;
+  }
 }
 .ring-expand {
   animation: ring-expand 1.8s ease-out infinite;
@@ -35,23 +143,38 @@ html, body {
   animation: ring-expand 1.8s ease-out 1.2s infinite;
 }
 
-/* ── Float up particle ─────────────────────────────────────────────────────── */
 @keyframes floatUp {
-  0%   { opacity: 1; transform: translateY(0) scale(1); }
-  100% { opacity: 0; transform: translateY(-110px) scale(1.6); }
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-110px) scale(1.6);
+  }
 }
 
-/* ── Sabotage screen flash ────────────────────────────────────────────────── */
 @keyframes sabFlash {
-  0%,100% { opacity: 0; }
-  20%, 80% { opacity: 1; }
+  0%,
+  100% {
+    opacity: 0;
+  }
+  20%,
+  80% {
+    opacity: 1;
+  }
 }
-.anim-sab-flash { animation: sabFlash 0.8s ease-in-out; }
+.anim-sab-flash {
+  animation: sabFlash 0.8s ease-in-out;
+}
 
-/* ── Boost shimmer ─────────────────────────────────────────────────────────── */
 @keyframes shimmer {
-  0%   { background-position: -200% center; }
-  100% { background-position: 200%  center; }
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
 }
 .shimmer-gold {
   background: linear-gradient(90deg, #ca8a04 0%, #fde047 40%, #ca8a04 60%, #fbbf24 100%);
@@ -69,86 +192,138 @@ html, body {
   animation: shimmer 1.2s linear infinite;
 }
 
-/* ── Screen-wide flash overlays ────────────────────────────────────────────── */
 @keyframes flashRed {
-  0%, 100% { opacity: 0; }
-  30%, 70%  { opacity: 1; }
+  0%,
+  100% {
+    opacity: 0;
+  }
+  30%,
+  70% {
+    opacity: 1;
+  }
 }
 @keyframes flashYellow {
-  0%, 100% { opacity: 0; }
-  30%, 70%  { opacity: 1; }
+  0%,
+  100% {
+    opacity: 0;
+  }
+  30%,
+  70% {
+    opacity: 1;
+  }
 }
-.flash-red    { animation: flashRed    0.7s ease-out forwards; }
-.flash-yellow { animation: flashYellow 0.7s ease-out forwards; }
+.flash-red {
+  animation: flashRed 0.7s ease-out forwards;
+}
+.flash-yellow {
+  animation: flashYellow 0.7s ease-out forwards;
+}
 
-/* ── Shake animation ───────────────────────────────────────────────────────── */
 @keyframes shake {
-  0%,100% { transform: translateX(0); }
-  20%      { transform: translateX(-8px); }
-  40%      { transform: translateX(8px); }
-  60%      { transform: translateX(-5px); }
-  80%      { transform: translateX(5px); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-8px);
+  }
+  40% {
+    transform: translateX(8px);
+  }
+  60% {
+    transform: translateX(-5px);
+  }
+  80% {
+    transform: translateX(5px);
+  }
 }
-.animate-shake { animation: shake 0.5s ease-out; }
+.animate-shake {
+  animation: shake 0.5s ease-out;
+}
 
-/* ── Glitch ─────────────────────────────────────────────────────────────────  */
 @keyframes glitch {
-  0%,100% { transform: translate(0); }
-  20%     { transform: translate(-4px, 1px); }
-  40%     { transform: translate(4px, -1px); }
-  60%     { transform: translate(-2px, 2px); }
-  80%     { transform: translate(2px, -2px); }
+  0%,
+  100% {
+    transform: translate(0);
+  }
+  20% {
+    transform: translate(-4px, 1px);
+  }
+  40% {
+    transform: translate(4px, -1px);
+  }
+  60% {
+    transform: translate(-2px, 2px);
+  }
+  80% {
+    transform: translate(2px, -2px);
+  }
 }
-.animate-glitch { animation: glitch 0.35s steps(2) infinite; }
+.animate-glitch {
+  animation: glitch 0.35s steps(2) infinite;
+}
 
-/* ── Tug bar center knot pulse ─────────────────────────────────────────────── */
 @keyframes knot-glow {
-  0%, 100% { box-shadow: 0 0 8px 2px white; }
-  50%       { box-shadow: 0 0 20px 6px white; }
+  0%,
+  100% {
+    box-shadow: 0 0 8px 2px white;
+  }
+  50% {
+    box-shadow: 0 0 20px 6px white;
+  }
 }
-.knot-glow { animation: knot-glow 1.5s ease-in-out infinite; }
+.knot-glow {
+  animation: knot-glow 1.5s ease-in-out infinite;
+}
 
-/* ── Number tick (TPS counter) ────────────────────────────────────────────── */
 @keyframes numberTick {
-  from { opacity: 0.3; transform: translateY(4px); }
-  to   { opacity: 1;   transform: translateY(0); }
+  from {
+    opacity: 0.3;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
-.number-tick { animation: numberTick 0.15s ease-out; }
+.number-tick {
+  animation: numberTick 0.15s ease-out;
+}
 
-/* ── Play / game card chrome ───────────────────────────────────────────────── */
 .game-card-shell {
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.06),
-    0 1px 0 rgba(255, 255, 255, 0.04) inset,
-    0 32px 64px -32px rgba(0, 0, 0, 0.9);
+  box-shadow: var(--shadow-patch), 0 1px 0 rgba(175, 162, 255, 0.06) inset;
 }
 .game-canvas-frame {
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.07),
-    inset 0 48px 80px -20px rgba(0, 0, 0, 0.45);
+  box-shadow: inset 0 0 0 1px rgba(175, 162, 255, 0.12), inset 0 48px 80px -20px rgba(0, 0, 0, 0.45);
 }
 
-/* ── Cooldown circular progress ───────────────────────────────────────────── */
-.cooldown-circle { transition: stroke-dashoffset 1s linear; }
+.cooldown-circle {
+  transition: stroke-dashoffset 1s linear;
+}
 
-/* ── Pulse slow ───────────────────────────────────────────────────────────── */
 @keyframes pulse-slow {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.6; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
 }
-.animate-pulse-slow { animation: pulse-slow 3s infinite ease-in-out; }
+.animate-pulse-slow {
+  animation: pulse-slow 3s infinite ease-in-out;
+}
 
-/* ── Scanline overlay (dashboard) ─────────────────────────────────────────── */
 .scanlines::after {
-  content: '';
+  content: "";
   position: fixed;
   inset: 0;
   background: repeating-linear-gradient(
     0deg,
     transparent,
     transparent 2px,
-    rgba(0,0,0,0.04) 2px,
-    rgba(0,0,0,0.04) 4px
+    rgba(0, 0, 0, 0.04) 2px,
+    rgba(0, 0, 0, 0.04) 4px
   );
   pointer-events: none;
   z-index: 999;

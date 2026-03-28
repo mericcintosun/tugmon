@@ -76,8 +76,8 @@ interface GameState {
 }
 
 const teamGrad: Record<TeamId, string> = {
-  1: 'from-red-950 via-red-900/60 to-[#040408]',
-  2: 'from-blue-950 via-blue-900/60 to-[#040408]',
+  1: "from-red-950/90 via-red-950/40 to-background",
+  2: "from-blue-950/90 via-blue-950/40 to-background",
 };
 
 // ─── Game Session ───────────────────────────────────────────────────────────────
@@ -616,17 +616,17 @@ function GameSession() {
       className={[
         'relative flex min-h-0 flex-1 flex-col font-sans select-none',
         'bg-gradient-to-b',
-        phase === 'playing' && team ? teamGrad[team] : 'from-[#0a0a12] to-[#040408]',
+        phase === "playing" && team ? teamGrad[team] : "from-surface-container-low to-background",
       ].join(' ')}
     >
       {/* ── Wallet badge ── */}
       {burnerAddress && (
         <div className="absolute right-3 top-3 z-50 sm:right-6 sm:top-4">
-          <div className="rounded-full border border-white/[0.12] bg-black/55 px-3 py-1.5 font-mono text-[10px] text-white/65 shadow-lg shadow-black/40 backdrop-blur-md">
-            <span className="text-white/90">{balance}</span>{' '}
-            <span className="text-white/35">MON</span>
-            <span className="mx-1.5 text-white/20">·</span>
-            <span className="text-white/50">{burnerAddress.slice(0, 6)}…{burnerAddress.slice(-4)}</span>
+          <div className="glass-panel rounded-full border border-dashed border-outline-variant px-3 py-1.5 font-mono text-[10px] text-on-surface-variant shadow-patch">
+            <span className="text-on-surface">{balance}</span>{" "}
+            <span className="text-outline">MON</span>
+            <span className="mx-1.5 text-outline/60">·</span>
+            <span className="text-on-surface-variant">{burnerAddress.slice(0, 6)}…{burnerAddress.slice(-4)}</span>
           </div>
         </div>
       )}
@@ -640,7 +640,7 @@ function GameSession() {
             animate={{ opacity: 0, y: -120, x: p.drift }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.85, ease: 'easeOut' }}
-            className="fixed pointer-events-none z-50 font-black text-2xl text-white"
+            className="fixed pointer-events-none z-50 font-headline text-2xl font-black text-on-surface"
             style={{ left: p.x, top: p.y }}
           >
             {p.label}
@@ -692,17 +692,19 @@ function GameSession() {
             className="flex flex-1 flex-col justify-center gap-8"
           >
             <div className="text-center">
-              <p className="mb-2 font-orbitron text-[10px] font-bold uppercase tracking-[0.35em] text-violet-300/80">
+              <p className="mb-2 font-label text-[10px] font-bold uppercase tracking-[0.35em] text-tertiary">
                 The Gmonad War
               </p>
-              <h1 className="mb-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl">Community Tug</h1>
-              <p className="text-sm text-white/45">
+              <h1 className="mb-2 font-headline text-3xl font-semibold tracking-tight text-on-surface sm:text-4xl">
+                Community Tug
+              </h1>
+              <p className="font-body text-sm text-on-surface-variant">
                 Pledge to a Monad crew. Your burner pulls for the rope; link main wallet for NFT power.
               </p>
             </div>
 
             <div className="space-y-4">
-              <label className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-white/40">
+              <label className="block font-label text-[11px] font-semibold uppercase tracking-[0.2em] text-outline">
                 Display name
               </label>
               <input
@@ -715,11 +717,11 @@ function GameSession() {
                 onKeyDown={e =>
                   e.key === 'Enter' && selectedCommunity && selectedChainTeam && void handleNext()
                 }
-                className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3.5 text-center text-lg font-medium text-white placeholder:text-white/25 focus:border-white/25 focus:outline-none focus:ring-1 focus:ring-white/15"
+                className="input-ghost-border w-full px-4 py-3.5 text-center font-body text-lg font-medium text-on-surface placeholder:text-outline/60 focus:ring-0"
               />
 
               <div className="pt-1">
-                <label className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.2em] text-white/40">
+                <label className="mb-3 block font-label text-[11px] font-semibold uppercase tracking-[0.2em] text-outline">
                   Rope side (on-chain)
                 </label>
                 <div className="grid grid-cols-2 gap-3">
@@ -727,33 +729,37 @@ function GameSession() {
                     type="button"
                     onClick={() => setSelectedChainTeam(TEAMS.RED)}
                     className={[
-                      'rounded-2xl border-2 px-4 py-4 text-center transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30',
+                      "rounded-sm border-2 border-dashed px-4 py-4 text-center transition focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                       selectedChainTeam === TEAMS.RED
-                        ? 'border-red-400 bg-red-950/50 shadow-[0_0_24px_rgba(239,68,68,0.25)]'
-                        : 'border-white/10 bg-white/[0.03] hover:border-red-500/40',
+                        ? "border-red-400 bg-red-950/50 shadow-[0_0_24px_rgba(239,68,68,0.25)]"
+                        : "border-outline-variant bg-surface-container-high/80 hover:border-red-400/50",
                     ].join(' ')}
                   >
                     <span className="block text-2xl font-black tracking-tight text-red-400">RED</span>
-                    <span className="mt-1 block text-[11px] font-medium text-white/45">Halat — kırmızı taraf</span>
+                    <span className="mt-1 block font-body text-[11px] font-medium text-on-surface-variant">
+                      Halat — kırmızı taraf
+                    </span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setSelectedChainTeam(TEAMS.BLUE)}
                     className={[
-                      'rounded-2xl border-2 px-4 py-4 text-center transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30',
+                      "rounded-sm border-2 border-dashed px-4 py-4 text-center transition focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                       selectedChainTeam === TEAMS.BLUE
-                        ? 'border-blue-400 bg-blue-950/50 shadow-[0_0_24px_rgba(59,130,246,0.25)]'
-                        : 'border-white/10 bg-white/[0.03] hover:border-blue-500/40',
+                        ? "border-blue-400 bg-blue-950/50 shadow-[0_0_24px_rgba(59,130,246,0.25)]"
+                        : "border-outline-variant bg-surface-container-high/80 hover:border-blue-400/50",
                     ].join(' ')}
                   >
                     <span className="block text-2xl font-black tracking-tight text-blue-400">BLUE</span>
-                    <span className="mt-1 block text-[11px] font-medium text-white/45">Halat — mavi taraf</span>
+                    <span className="mt-1 block font-body text-[11px] font-medium text-on-surface-variant">
+                      Halat — mavi taraf
+                    </span>
                   </button>
                 </div>
               </div>
 
               <div className="pt-1">
-                <label className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.2em] text-white/40">
+                <label className="mb-3 block font-label text-[11px] font-semibold uppercase tracking-[0.2em] text-outline">
                   Crew (stats & NFT)
                 </label>
                 <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
@@ -773,40 +779,42 @@ function GameSession() {
                         type="button"
                         onClick={() => setSelectedCommunity(c.id)}
                         className={[
-                          'rounded-2xl border-2 px-3 py-3 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30',
-                          sel ? borderSel : 'border-white/10 bg-white/[0.03] hover:border-white/20',
+                          "rounded-sm border-2 border-dashed px-3 py-3 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
+                          sel ? borderSel : "border-outline-variant bg-surface-container-high/70 hover:border-outline",
                         ].join(' ')}
                       >
                         <span className="flex items-center gap-2">
                           <span className="text-xl">{c.emoji}</span>
-                          <span className="font-bold text-white">{c.name}</span>
+                          <span className="font-headline font-bold text-on-surface">{c.name}</span>
                         </span>
-                        <span className="mt-1 block text-[11px] leading-snug text-white/45">{c.short}</span>
+                        <span className="mt-1 block font-body text-[11px] leading-snug text-on-surface-variant">
+                          {c.short}
+                        </span>
                       </button>
                     );
                   })}
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/35">
+              <div className="rounded-sm stitched-border bg-surface-container-high/50 px-4 py-3">
+                <p className="mb-2 font-label text-[11px] font-semibold uppercase tracking-[0.18em] text-outline">
                   Main wallet (NFT buff)
                 </p>
-                <p className="mb-3 text-[11px] leading-relaxed text-white/40">
+                <p className="mb-3 font-body text-[11px] leading-relaxed text-on-surface-variant">
                   Connect the wallet that holds your crew&apos;s NFT — pulls from your burner get multiplied (set{' '}
-                  <code className="text-white/55">NEXT_PUBLIC_NFT_*</code> in env).
+                  <code className="text-primary/90">NEXT_PUBLIC_NFT_*</code> in env).
                 </p>
                 {!mainWallet ? (
                   <button
                     type="button"
                     onClick={() => void connectBrowserWallet().then((a) => setMainWallet(a))}
-                    className="w-full rounded-xl border border-violet-500/35 bg-violet-500/10 py-2.5 text-sm font-semibold text-violet-100 transition hover:bg-violet-500/20"
+                    className="w-full border border-dashed border-primary/50 bg-primary/10 py-2.5 font-headline text-sm font-semibold text-primary transition hover:bg-primary/20"
                   >
                     Connect wallet
                   </button>
                 ) : (
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="font-mono text-xs text-white/70">
+                    <span className="font-mono text-xs text-on-surface">
                       {mainWallet.slice(0, 6)}…{mainWallet.slice(-4)}
                     </span>
                     <button
@@ -815,7 +823,7 @@ function GameSession() {
                         void disconnectStoredMainWallet();
                         setMainWallet(null);
                       }}
-                      className="rounded-lg border border-white/15 px-3 py-1.5 text-[11px] font-medium text-white/55 hover:bg-white/5"
+                      className="rounded-sm border border-dashed border-outline-variant px-3 py-1.5 font-label text-[11px] font-medium text-on-surface-variant hover:bg-surface-container-high"
                     >
                       Disconnect
                     </button>
@@ -827,23 +835,24 @@ function GameSession() {
                 type="button"
                 disabled={!selectedCommunity || !selectedChainTeam}
                 onClick={() => void handleNext()}
-                className="w-full rounded-xl bg-white py-3.5 text-sm font-semibold text-[#040408] transition hover:bg-white/90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
+                className="group relative w-full bg-gradient-to-br from-primary to-primary-container py-3.5 font-headline text-sm font-bold uppercase tracking-wide text-on-primary transition hover:opacity-95 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
               >
+                <span className="absolute -inset-[2px] -z-10 border border-dashed border-secondary/50 opacity-70" />
                 Continue
               </button>
             </div>
 
-            <p className="text-center text-xs leading-relaxed text-white/35">
+            <p className="text-center font-body text-xs leading-relaxed text-outline">
               A temporary session wallet is created for this app. Funds may be topped up automatically on testnet.
             </p>
-            {getBurnerWalletMode() === 'deterministic' ? (
-              <p className="rounded-xl border border-amber-500/25 bg-amber-500/[0.07] px-4 py-3 text-center text-[11px] leading-relaxed text-amber-100/85">
-                <span className="font-semibold text-amber-200/95">Note: </span>
+            {getBurnerWalletMode() === "deterministic" ? (
+              <p className="rounded-sm border border-dashed border-secondary/40 bg-secondary/5 px-4 py-3 text-center font-body text-[11px] leading-relaxed text-secondary-fixed">
+                <span className="font-headline font-semibold text-secondary">Note: </span>
                 The same display name always derives the same wallet address on any device—anyone choosing that name shares that session. Pick a unique name for demos.
               </p>
             ) : (
-              <p className="rounded-xl border border-sky-500/25 bg-sky-500/[0.07] px-4 py-3 text-center text-[11px] leading-relaxed text-sky-100/85">
-                <span className="font-semibold text-sky-200/95">Note: </span>
+              <p className="rounded-sm border border-dashed border-tertiary/35 bg-tertiary/5 px-4 py-3 text-center font-body text-[11px] leading-relaxed text-tertiary">
+                <span className="font-headline font-semibold text-tertiary">Note: </span>
                 Your wallet is stored only in this browser (localStorage). Clearing site data creates a new address; your display name is separate from the key.
               </p>
             )}
@@ -853,23 +862,25 @@ function GameSession() {
         {/* ── FUNDING / JOINING PHASE ── */}
         {(phase === 'funding' || phase === 'joining') && (
           <div className="flex flex-1 flex-col items-center justify-center gap-6">
-            <div className="h-14 w-14 animate-spin rounded-full border-4 border-t-white/80 border-r-transparent border-b-white/20 border-l-transparent" />
-            <div className="text-lg font-medium text-white/90">
+            <div className="h-14 w-14 animate-spin rounded-full border-4 border-t-primary border-r-transparent border-b-outline-variant border-l-transparent" />
+            <div className="font-headline text-lg font-medium text-on-surface">
               {phase === 'funding' ? 'Preparing wallet…' : 'Joining team…'}
             </div>
             {txStatus && (
-              <div className={`text-sm font-bold max-w-sm text-center px-4 py-2 rounded-xl border ${
-                txStatus.type === 'err'
-                  ? 'bg-red-900/30 border-red-500/40 text-red-300'
-                  : txStatus.type === 'ok'
-                  ? 'bg-green-900/30 border-green-500/40 text-green-300'
-                  : 'bg-white/5 border-white/10 text-gray-400'
-              }`}>
+              <div
+                className={`max-w-sm rounded-sm border px-4 py-2 text-center font-label text-sm font-bold ${
+                  txStatus.type === "err"
+                    ? "border-dashed border-error bg-error/15 text-error"
+                    : txStatus.type === "ok"
+                      ? "border-dashed border-tertiary bg-tertiary/10 text-tertiary"
+                      : "border-dashed border-outline-variant bg-surface-container-high text-on-surface-variant"
+                }`}
+              >
                 {txStatus.msg}
               </div>
             )}
             {burnerAddress && (
-              <div className="text-xs text-gray-600 font-mono">
+              <div className="font-mono text-xs text-outline">
                 Burner: {burnerAddress.slice(0, 10)}…{burnerAddress.slice(-6)}
               </div>
             )}
@@ -882,18 +893,20 @@ function GameSession() {
             <motion.div initial={{ scale: 0.5 }} animate={{ scale: 1 }} className="text-5xl">
               🏁
             </motion.div>
-            <h2 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">Round over</h2>
-            <div className="mt-2 text-lg text-white/80">
-              Winner:{' '}
+            <h2 className="font-headline text-2xl font-semibold tracking-tight text-on-surface sm:text-3xl">
+              Round over
+            </h2>
+            <div className="mt-2 font-body text-lg text-on-surface">
+              Winner:{" "}
               <span
                 className={
-                  winnerIsRed ? 'text-red-400' : winnerIsBlue ? 'text-blue-400' : 'text-white/50'
+                  winnerIsRed ? "text-red-400" : winnerIsBlue ? "text-blue-400" : "text-on-surface-variant"
                 }
               >
                 {winnerLabel}
               </span>
             </div>
-            <p className="mt-2 text-sm text-white/40">Next round starting…</p>
+            <p className="mt-2 font-body text-sm text-on-surface-variant">Next round starting…</p>
           </div>
         )}
 
@@ -901,12 +914,12 @@ function GameSession() {
         {phase === 'playing' && team && (
           <div className="flex w-full flex-1 flex-col justify-center gap-3 pb-6 pt-2 sm:gap-5">
             <div className="flex justify-center px-2">
-              <div className="inline-flex items-center gap-2.5 rounded-full border border-white/[0.1] bg-white/[0.04] px-3.5 py-2 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.7)] backdrop-blur-md sm:px-4">
+              <div className="glass-panel inline-flex items-center gap-2.5 rounded-full border border-dashed border-outline-variant px-3.5 py-2 shadow-patch sm:px-4">
                 <span className="relative flex h-2 w-2 shrink-0">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/70" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.8)]" />
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-tertiary/70" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-tertiary shadow-[0_0_10px_rgba(161,250,255,0.6)]" />
                 </span>
-                <span className="font-orbitron text-[10px] font-bold uppercase tracking-[0.22em] text-white/55 sm:text-[11px]">
+                <span className="font-label text-[10px] font-bold uppercase tracking-[0.22em] text-on-surface-variant sm:text-[11px]">
                   Match live
                 </span>
               </div>

@@ -255,15 +255,15 @@ export default function CanvasGame({
   return (
     <div
       ref={wrapRef}
-      className="game-card-shell mx-auto flex w-full max-w-xl flex-col overflow-hidden rounded-3xl border border-white/[0.09] bg-gradient-to-b from-[#12121a] to-[#070709]"
+      className="game-card-shell mx-auto flex w-full max-w-xl flex-col overflow-hidden rounded-sm border border-dashed border-outline-variant bg-gradient-to-b from-surface-container-high to-surface-container-low"
     >
       {/* HUD */}
-      <div className="flex shrink-0 items-stretch gap-2 border-b border-white/[0.07] px-2.5 py-3 sm:gap-3 sm:px-4 sm:py-3.5">
-        <div className="min-w-0 flex-1 rounded-2xl border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] backdrop-blur-sm sm:px-3.5">
-          <div className="font-orbitron text-[9px] font-bold uppercase tracking-[0.2em] text-white/38">You</div>
+      <div className="flex shrink-0 items-stretch gap-2 border-b border-dashed border-outline-variant/80 px-2.5 py-3 sm:gap-3 sm:px-4 sm:py-3.5">
+        <div className="min-w-0 flex-1 rounded-sm border border-dashed border-outline-variant/50 bg-surface-container/80 px-3 py-2.5 backdrop-blur-sm sm:px-3.5">
+          <div className="font-label text-[9px] font-bold uppercase tracking-[0.2em] text-on-surface-variant">You</div>
           <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
             <span
-              className="font-orbitron text-[1.65rem] font-black leading-none tabular-nums tracking-tight sm:text-[1.85rem]"
+              className="font-label text-[1.65rem] font-black leading-none tabular-nums tracking-tight sm:text-[1.85rem]"
               style={{
                 color: teamColor,
                 textShadow: isDisabled ? "none" : `0 0 28px ${teamColorDark}55`,
@@ -271,21 +271,21 @@ export default function CanvasGame({
             >
               {Math.floor(playerScore)}
             </span>
-            <span className="max-w-full truncate text-[11px] font-medium text-white/50">{roleMeta.label}</span>
+            <span className="max-w-full truncate font-body text-[11px] font-medium text-on-surface-variant">{roleMeta.label}</span>
           </div>
         </div>
 
-        <div className="flex w-[5.5rem] shrink-0 flex-col items-center justify-center rounded-2xl border border-indigo-500/20 bg-indigo-500/[0.07] px-1 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] sm:w-[6.25rem]">
-          <span className="font-orbitron text-[8px] font-bold uppercase tracking-[0.25em] text-indigo-300/70">TPS</span>
+        <div className="flex w-[5.5rem] shrink-0 flex-col items-center justify-center rounded-sm border border-dashed border-primary/35 bg-primary/5 px-1 py-2 sm:w-[6.25rem]">
+          <span className="font-label text-[8px] font-bold uppercase tracking-[0.25em] text-primary/80">TPS</span>
           <div className="mt-0.5">
             <TpsDisplay eventCount={eventCount} compact hideUnit />
           </div>
         </div>
 
-        <div className="min-w-0 flex-1 rounded-2xl border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-right shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] backdrop-blur-sm sm:px-3.5">
-          <div className="font-orbitron text-[9px] font-bold uppercase tracking-[0.2em] text-white/38">Rival</div>
+        <div className="min-w-0 flex-1 rounded-sm border border-dashed border-outline-variant/50 bg-surface-container/80 px-3 py-2.5 text-right backdrop-blur-sm sm:px-3.5">
+          <div className="font-label text-[9px] font-bold uppercase tracking-[0.2em] text-on-surface-variant">Rival</div>
           <div
-            className="font-orbitron mt-1 text-[1.65rem] font-black leading-none tabular-nums tracking-tight sm:text-[1.85rem]"
+            className="mt-1 font-label text-[1.65rem] font-black leading-none tabular-nums tracking-tight sm:text-[1.85rem]"
             style={{
               color: rivalColor,
               textShadow: enemyFrozen ? "none" : `0 0 24px ${isRed ? "#3b82f6" : "#ef4444"}40`,
@@ -294,7 +294,7 @@ export default function CanvasGame({
             {Math.floor(enemyScore)}
           </div>
           {enemyFrozen && (
-            <div className="mt-1 inline-block rounded-md border border-sky-400/25 bg-sky-500/10 px-1.5 py-0.5 font-orbitron text-[9px] font-bold uppercase tracking-wider text-sky-200/95">
+            <div className="mt-1 inline-block rounded-sm border border-dashed border-tertiary/40 bg-tertiary/10 px-1.5 py-0.5 font-label text-[9px] font-bold uppercase tracking-wider text-tertiary">
               Frozen
             </div>
           )}
@@ -302,12 +302,12 @@ export default function CanvasGame({
       </div>
 
       {(allegianceLine || powerLine) && (
-        <div className="shrink-0 border-b border-white/[0.05] bg-violet-950/20 px-3 py-2 text-center sm:px-4">
+        <div className="shrink-0 border-b border-dashed border-outline-variant/60 bg-primary/5 px-3 py-2 text-center sm:px-4">
           {allegianceLine && (
-            <p className="text-[11px] font-medium leading-snug text-violet-100/88">{allegianceLine}</p>
+            <p className="font-body text-[11px] font-medium leading-snug text-on-surface">{allegianceLine}</p>
           )}
           {powerLine && (
-            <p className="font-orbitron mt-1 text-[9px] font-bold uppercase tracking-[0.2em] text-amber-200/80">
+            <p className="mt-1 font-label text-[9px] font-bold uppercase tracking-[0.2em] text-secondary-fixed">
               {powerLine}
             </p>
           )}
@@ -326,18 +326,18 @@ export default function CanvasGame({
 
       {/* Canvas — bounded height; draw resolution unchanged in CanvasGame logic */}
       <div
-        className="game-canvas-frame relative min-h-0 w-full flex-[1_1_auto] overflow-hidden bg-[#050508]"
+        className="game-canvas-frame relative min-h-0 w-full flex-[1_1_auto] overflow-hidden bg-surface-container-low"
         style={{ height: "min(42vh, 360px)" }}
       >
         <canvas ref={canvasRef} className="block h-full w-full touch-none" style={{ touchAction: "none" }} />
         {txStatus && (
           <div
-            className={`absolute bottom-3 left-1/2 max-w-[90%] -translate-x-1/2 rounded-xl border px-3.5 py-2.5 text-center text-xs shadow-lg backdrop-blur-md ${
+            className={`absolute bottom-3 left-1/2 max-w-[90%] -translate-x-1/2 rounded-sm border px-3.5 py-2.5 text-center font-body text-xs shadow-patch backdrop-blur-md ${
               txStatus.type === "err"
-                ? "border-red-500/45 bg-red-950/40 text-red-200"
+                ? "border-dashed border-error bg-error/15 text-error"
                 : txStatus.type === "ok"
-                  ? "border-emerald-500/35 bg-emerald-950/35 text-emerald-100/95"
-                  : "border-white/12 bg-black/50 text-white/60"
+                  ? "border-dashed border-tertiary bg-tertiary/10 text-tertiary"
+                  : "border-dashed border-outline-variant bg-surface-container-highest/90 text-on-surface-variant"
             }`}
           >
             {txStatus.msg}
@@ -346,7 +346,7 @@ export default function CanvasGame({
       </div>
 
       {/* Controls */}
-      <div className="shrink-0 border-t border-white/[0.07] bg-gradient-to-b from-[#0c0c10] to-[#050506] px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:px-4 sm:pt-3.5">
+      <div className="shrink-0 border-t border-dashed border-outline-variant bg-gradient-to-b from-surface-container to-surface-container-low px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:px-4 sm:pt-3.5">
         <div className="mb-2.5 flex min-h-[1.25rem] flex-wrap gap-2">
           {playerFrozen && (
             <span className="rounded-md border border-sky-500/20 bg-sky-500/10 px-2 py-0.5 text-[10px] font-semibold text-sky-200/90">
@@ -370,7 +370,7 @@ export default function CanvasGame({
             type="button"
             onPointerDown={handlePull}
             disabled={isDisabled}
-            className="group relative flex min-h-[72px] flex-1 touch-none select-none items-center justify-center overflow-hidden rounded-2xl border-2 text-base font-orbitron font-bold uppercase tracking-[0.12em] transition-[transform,filter] duration-150 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/25 focus-visible:ring-offset-2 focus-visible:ring-offset-[#050506] active:translate-y-px active:scale-[0.99] disabled:pointer-events-none sm:min-h-[76px] sm:text-lg"
+            className="group relative flex min-h-[72px] flex-1 touch-none select-none items-center justify-center overflow-hidden rounded-sm border-2 border-dashed text-base font-label font-bold uppercase tracking-[0.12em] transition-[transform,filter] duration-150 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container-low active:translate-y-px active:scale-[0.99] disabled:pointer-events-none sm:min-h-[76px] sm:text-lg"
             style={{
               background: isDisabled
                 ? "linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%)"
@@ -402,7 +402,7 @@ export default function CanvasGame({
                 handleAbility();
               }}
               disabled={cooldown > 0 || playerFrozen}
-              className="relative flex h-[72px] w-[72px] shrink-0 touch-none select-none flex-col items-center justify-center overflow-hidden rounded-2xl border-2 text-[9px] font-orbitron font-bold uppercase tracking-wider transition-[transform,filter] duration-150 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/25 focus-visible:ring-offset-2 focus-visible:ring-offset-[#050506] active:translate-y-px active:scale-[0.99] disabled:pointer-events-none sm:h-[76px] sm:w-[76px]"
+              className="relative flex h-[72px] w-[72px] shrink-0 touch-none select-none flex-col items-center justify-center overflow-hidden rounded-sm border-2 border-dashed text-[9px] font-label font-bold uppercase tracking-wider transition-[transform,filter] duration-150 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container-low active:translate-y-px active:scale-[0.99] disabled:pointer-events-none sm:h-[76px] sm:w-[76px]"
               style={{
                 background:
                   cooldown > 0 || playerFrozen
@@ -419,7 +419,7 @@ export default function CanvasGame({
             >
               {cooldown > 0 ? (
                 <>
-                  <span className="font-orbitron text-lg font-black">{cooldown}</span>
+                  <span className="font-label text-lg font-black">{cooldown}</span>
                   <span className="opacity-60">s</span>
                 </>
               ) : (

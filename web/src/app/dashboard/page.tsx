@@ -132,7 +132,6 @@ export default function TugmonDashboard() {
               if (parsed.name === 'PlayerJoined') {
                 const addr  = parsed.args[0] as string;
                 const tTeam = Number(parsed.args[1]);
-                const _communityId = Number(parsed.args[2]);
                 const role  = Number(parsed.args[3]) as RoleId;
                 const nick  = parsed.args[4] as string;
                 const curr  = nextPlayers.get(addr) ?? { address: addr, nickname: '', team: 0, roleId: 0 as RoleId, pulls: 0, specials: 0 };
@@ -252,8 +251,8 @@ export default function TugmonDashboard() {
   }, [game.lastReset, game.gameDuration]);
 
   // ── Derived ───────────────────────────────────────────────────────────────
-  const total   = game.redScore + game.blueScore || 1;
-  const redPct  = (game.redScore  / total) * 100;
+  const sum = game.redScore + game.blueScore;
+  const redPct = sum === 0 ? 50 : (game.redScore / sum) * 100;
   const bluePct = 100 - redPct;
 
   const top3 = [...players.values()]
@@ -265,26 +264,30 @@ export default function TugmonDashboard() {
   // ─────────────────────────────────────────────────────────
 
   if (loading) return (
-    <div className="flex min-h-[50vh] flex-1 items-center justify-center bg-[#020205]">
-      <div className="text-center space-y-6">
-        <div className="w-16 h-16 border-4 border-t-indigo-500 border-r-transparent border-b-purple-500 border-l-transparent rounded-full animate-spin mx-auto" />
-        <div className="text-3xl font-black italic text-white tracking-tighter animate-pulse">TUGMON ARENA</div>
-        <div className="text-sm text-gray-600">Connecting…</div>
+    <div className="flex min-h-[50vh] flex-1 items-center justify-center bg-background">
+      <div className="space-y-6 text-center">
+        <div className="mx-auto h-16 w-16 animate-spin rounded-full border-4 border-t-primary border-r-transparent border-b-secondary border-l-transparent" />
+        <div className="animate-pulse font-headline text-3xl font-black italic tracking-tighter text-on-surface">
+          TUGMON ARENA
+        </div>
+        <div className="font-label text-sm text-outline">Connecting…</div>
       </div>
     </div>
   );
 
   return (
-    <div className="relative flex min-h-0 flex-1 select-none flex-col overflow-hidden bg-[#020205] text-white scanlines">
-
-      {/* Background */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-0 left-0 w-[40vw] h-[50vh] bg-red-700/6  blur-[180px]" />
-        <div className="absolute bottom-0 right-0 w-[40vw] h-[50vh] bg-blue-700/6 blur-[180px]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(30,20,60,0.4)_0%,transparent_70%)]" />
+    <div className="relative flex min-h-0 flex-1 select-none flex-col overflow-hidden bg-background text-on-surface">
+      {/* Background — same vocabulary as landing / play */}
+      <div className="pointer-events-none fixed inset-0 opacity-[0.5]">
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse 80% 50% at 50% -15%, rgba(175, 162, 255, 0.1), transparent), radial-gradient(ellipse 55% 45% at 100% 40%, rgba(161, 250, 255, 0.05), transparent), radial-gradient(ellipse 50% 40% at 0% 85%, rgba(255, 103, 174, 0.04), transparent)",
+          }}
+        />
       </div>
 
-      {/* Flash overlay */}
       <AnimatePresence>
         {flashOverlay && (
           <motion.div
@@ -293,178 +296,233 @@ export default function TugmonDashboard() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="fixed inset-0 z-30 pointer-events-none"
+            className="pointer-events-none fixed inset-0 z-30"
             style={{
-              background: flashOverlay === 'red'
-                ? 'rgba(239,68,68,0.18)'
-                : 'rgba(234,179,8,0.15)',
+              background:
+                flashOverlay === "red" ? "rgba(239,68,68,0.16)" : "rgba(234,179,8,0.12)",
             }}
           />
         )}
       </AnimatePresence>
 
-      <div className="relative z-10 flex min-h-0 flex-1 flex-col gap-6 overflow-auto p-4 sm:p-8">
-
-        {/* ── TOP BAR ── */}
-        <div className="flex justify-between items-start">
-          <div>
-            <h1
-              className="font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-500"
-              style={{ fontSize: 'clamp(3rem, 6vw, 5.5rem)', lineHeight: 1 }}
-            >
-              TUGMON ARENA
-            </h1>
-            <p className="text-gray-600 text-sm uppercase tracking-[0.4em] font-bold mt-1 pl-0.5">
-              Real-Time On-Chain · Monad Testnet
-            </p>
+      <div className="relative z-10 mx-auto flex min-h-0 w-full max-w-[1440px] flex-1 flex-col gap-8 overflow-auto px-4 py-8 sm:gap-10 sm:px-6 sm:py-10 md:px-8">
+        {/* ── Hero strip (matches landing “Real-time arena” header) ── */}
+        <section className="relative overflow-hidden rounded-sm bg-surface-container-low p-6 sm:p-8 md:p-10 stitched-border">
+          <div className="absolute right-0 top-0 p-2 font-label text-[9px] uppercase tracking-[0.45em] text-tertiary opacity-50 sm:p-3 sm:text-[10px]">
+            WAR_ROOM · LIVE
           </div>
-          <TpsDisplay
-            eventCount={eventCount}
-            chainBlockTxCount={chainBlockTxCount}
-            chainBlockDeltaSec={chainBlockDeltaSec}
-          />
-        </div>
+          <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-2xl">
+              <p className="mb-2 font-label text-[10px] font-bold uppercase tracking-[0.3em] text-tertiary">
+                Monad testnet
+              </p>
+              <h1 className="font-headline text-3xl font-extrabold leading-[1.05] tracking-tighter text-on-surface sm:text-4xl md:text-5xl lg:text-6xl">
+                TUGMON <span className="text-primary">ARENA.</span>
+              </h1>
+              <p className="mt-3 font-body text-sm text-on-surface-variant sm:text-base">
+                Real-time on-chain scores, crew pull leaderboard, and session activity — stitched to the same atelier
+                chrome as the rest of Tugmon.
+              </p>
+              <p className="mt-3 font-label text-xs text-on-surface-variant">
+                BOARD STATE: <span className="text-tertiary">SYNCED</span>
+                <span className="mx-2 text-outline">|</span>
+                RPC: <span className="text-secondary">ACTIVE</span>
+              </p>
+            </div>
+            <div className="glass-panel flex w-full shrink-0 flex-col gap-2 rounded-sm border border-dashed border-outline-variant p-4 shadow-patch sm:max-w-md lg:w-auto lg:min-w-[min(100%,20rem)]">
+              <div className="flex items-center gap-3">
+                <span
+                  className="material-symbols-outlined text-3xl text-tertiary"
+                  style={{ fontVariationSettings: "'FILL' 1" }}
+                >
+                  monitoring
+                </span>
+                <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">
+                  Session activity
+                </span>
+              </div>
+              <TpsDisplay
+                eventCount={eventCount}
+                chainBlockTxCount={chainBlockTxCount}
+                chainBlockDeltaSec={chainBlockDeltaSec}
+                align="start"
+              />
+            </div>
+          </div>
+        </section>
 
-        {/* ── GIANT SCORES ── */}
-        <div className="flex justify-between items-end px-4">
-          {/* Red score */}
-          <div className="flex flex-col items-start">
-            <motion.span
-              key={game.redScore}
-              initial={{ opacity: 0.5, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={`font-black tabular-nums leading-none ${game.redSabotaged ? 'text-gray-500 animate-glitch' : 'text-red-500'}`}
-              style={{
-                fontSize: 'clamp(5rem, 12vw, 10rem)',
-                textShadow: game.redSabotaged ? 'none' : '0 0 60px rgba(239,68,68,0.4)',
-              }}
-            >
-              {game.redScore}
-            </motion.span>
-            <div className="flex items-center gap-2 mt-1">
-              <span className={`text-lg font-black uppercase tracking-[0.5em] ${game.redSabotaged ? 'text-blue-300 animate-pulse' : 'text-red-400/50'}`}>
-                {game.redSabotaged ? '❄️ FROZEN' : '🔴 RED'}
-              </span>
-              {game.redBoosted && <span className="text-yellow-300 font-black animate-pulse text-xl">⚡ NITRO</span>}
+        {/* ── Scoreboard + tug meter (patch card) ── */}
+        <section className="overflow-hidden rounded-sm bg-surface-container p-5 sm:p-8 md:p-10 stitched-border shadow-patch">
+          <div className="mb-8 flex flex-col justify-between gap-4 border-b border-dashed border-outline-variant/80 pb-6 sm:flex-row sm:items-end">
+            <div>
+              <h2 className="font-headline text-xl font-bold uppercase tracking-tight text-on-surface sm:text-2xl">
+                Live scores
+              </h2>
+              <p className="mt-1 font-label text-xs text-on-surface-variant sm:text-sm">
+                RED vs BLUE · knot tracks red share of total pulls
+              </p>
             </div>
           </div>
 
-          {/* VS / Spotlight */}
-          <div className="flex flex-col items-center gap-2 min-w-[200px]">
-            <span className="text-3xl font-black text-gray-800">VS</span>
-            <AnimatePresence mode="wait">
-              {spotlight ? (
-                <motion.div
-                  key={`spotlight-${spotlight.name}`}
-                  initial={{ opacity: 0, scale: 0.8, y: 10 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  className={`text-center px-6 py-3 rounded-2xl border backdrop-blur-md ${
-                    spotlight.team === 1
-                      ? 'bg-red-500/10 border-red-500/30'
-                      : spotlight.team === 2
-                        ? 'bg-blue-500/10 border-blue-500/30'
-                        : 'bg-yellow-500/10 border-yellow-500/30'
+          <div className="flex flex-col items-center gap-8 px-1 sm:flex-row sm:items-end sm:justify-between sm:gap-6 sm:px-2">
+            <div className="flex flex-col items-center sm:items-start">
+              <motion.span
+                key={game.redScore}
+                initial={{ opacity: 0.5, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`font-headline font-black tabular-nums leading-none ${
+                  game.redSabotaged ? "animate-glitch text-on-surface-variant" : "text-red-500"
+                }`}
+                style={{
+                  fontSize: "clamp(3.5rem, 10vw, 8rem)",
+                  textShadow: game.redSabotaged ? "none" : "0 0 48px rgba(239,68,68,0.35)",
+                }}
+              >
+                {game.redScore}
+              </motion.span>
+              <div className="mt-2 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+                <span
+                  className={`font-label text-sm font-black uppercase tracking-[0.35em] sm:text-lg sm:tracking-[0.5em] ${
+                    game.redSabotaged ? "animate-pulse text-tertiary" : "text-red-400/80"
                   }`}
                 >
-                  <div className="text-3xl font-black text-white">{spotlight.action}</div>
-                  <div className="text-base font-mono text-gray-400 mt-1">{spotlight.name}</div>
-                  <div className="text-2xl mt-1">{spotlight.emoji}</div>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="idle"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-xs text-gray-700 uppercase tracking-widest font-bold animate-pulse"
+                  {game.redSabotaged ? "❄️ FROZEN" : "🔴 RED"}
+                </span>
+                {game.redBoosted && (
+                  <span className="font-label text-lg font-black text-secondary animate-pulse">⚡ NITRO</span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex min-w-0 flex-col items-center gap-3 sm:min-w-[220px]">
+              <span className="font-headline text-2xl font-black text-primary sm:text-3xl">VS</span>
+              <AnimatePresence mode="wait">
+                {spotlight ? (
+                  <motion.div
+                    key={`spotlight-${spotlight.name}`}
+                    initial={{ opacity: 0, scale: 0.92, y: 8 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.92 }}
+                    className={`w-full max-w-sm rounded-sm border border-dashed px-5 py-4 text-center glass-panel ${
+                      spotlight.team === 1
+                        ? "border-red-500/45 bg-red-500/10"
+                        : spotlight.team === 2
+                          ? "border-blue-500/45 bg-blue-500/10"
+                          : "border-amber-500/45 bg-amber-500/10"
+                    }`}
+                  >
+                    <div className="font-headline text-xl font-black text-on-surface sm:text-2xl">{spotlight.action}</div>
+                    <div className="mt-1 font-mono text-sm text-on-surface-variant">{spotlight.name}</div>
+                    <div className="mt-2 text-2xl">{spotlight.emoji}</div>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="idle"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="font-label text-[10px] font-bold uppercase tracking-[0.28em] text-outline animate-pulse"
+                  >
+                    Awaiting action
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            <div className="flex flex-col items-center sm:items-end">
+              <motion.span
+                key={game.blueScore}
+                initial={{ opacity: 0.5, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`font-headline font-black tabular-nums leading-none ${
+                  game.blueSabotaged ? "animate-glitch text-on-surface-variant" : "text-blue-500"
+                }`}
+                style={{
+                  fontSize: "clamp(3.5rem, 10vw, 8rem)",
+                  textShadow: game.blueSabotaged ? "none" : "0 0 48px rgba(59,130,246,0.35)",
+                }}
+              >
+                {game.blueScore}
+              </motion.span>
+              <div className="mt-2 flex flex-wrap items-center justify-center gap-2 sm:justify-end">
+                {game.blueBoosted && (
+                  <span className="font-label text-lg font-black text-secondary animate-pulse">⚡ NITRO</span>
+                )}
+                <span
+                  className={`font-label text-sm font-black uppercase tracking-[0.35em] sm:text-lg sm:tracking-[0.5em] ${
+                    game.blueSabotaged ? "animate-pulse text-secondary" : "text-blue-400/80"
+                  }`}
                 >
-                  AWAITING ACTION
-                </motion.div>
-              )}
-            </AnimatePresence>
+                  {game.blueSabotaged ? "FROZEN ❄️" : "BLUE 🔵"}
+                </span>
+              </div>
+            </div>
           </div>
 
-          {/* Blue score */}
-          <div className="flex flex-col items-end">
-            <motion.span
-              key={game.blueScore}
-              initial={{ opacity: 0.5, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={`font-black tabular-nums leading-none ${game.blueSabotaged ? 'text-gray-500 animate-glitch' : 'text-blue-500'}`}
-              style={{
-                fontSize: 'clamp(5rem, 12vw, 10rem)',
-                textShadow: game.blueSabotaged ? 'none' : '0 0 60px rgba(59,130,246,0.4)',
-              }}
+          <div className="relative mt-10 h-16 w-full overflow-visible rounded-sm border border-dashed border-outline-variant bg-surface-container-low shadow-inner">
+            <motion.div
+              initial={{ width: "50%" }}
+              animate={{ width: `${redPct}%` }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className={`absolute left-0 top-0 h-full rounded-l-sm ${
+                game.redSabotaged
+                  ? "animate-pulse bg-on-surface-variant/40"
+                  : game.redBoosted
+                    ? "shimmer-gold"
+                    : "bg-gradient-to-r from-red-900 to-red-500"
+              }`}
+            />
+            <motion.div
+              initial={{ width: "50%" }}
+              animate={{ width: `${bluePct}%` }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className={`absolute right-0 top-0 h-full rounded-r-sm ${
+                game.blueSabotaged
+                  ? "animate-pulse bg-on-surface-variant/40"
+                  : game.blueBoosted
+                    ? "shimmer-gold"
+                    : "bg-gradient-to-l from-blue-900 to-blue-500"
+              }`}
+            />
+
+            <motion.div
+              initial={{ left: "50%" }}
+              animate={{ left: `${redPct}%` }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="absolute top-1/2 z-10"
+              style={{ transform: "translate(-50%, -50%)" }}
             >
-              {game.blueScore}
-            </motion.span>
-            <div className="flex items-center gap-2 mt-1 justify-end">
-              {game.blueBoosted && <span className="text-yellow-300 font-black animate-pulse text-xl">NITRO ⚡</span>}
-              <span className={`text-lg font-black uppercase tracking-[0.5em] ${game.blueSabotaged ? 'text-red-300 animate-pulse' : 'text-blue-400/50'}`}>
-                {game.blueSabotaged ? 'FROZEN ❄️' : 'BLUE 🔵'}
+              <div className="group relative flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-full border-2 border-dashed border-secondary bg-surface-container-highest text-3xl shadow-patch sm:h-20 sm:w-20 sm:text-4xl">
+                <span className="absolute -inset-1 -z-10 rounded-full border border-dashed border-primary/40 opacity-60" />
+                🚀
+              </div>
+            </motion.div>
+
+            <div className="pointer-events-none absolute inset-0 flex items-center select-none">
+              <span className="ml-4 font-label text-xs font-black tabular-nums text-on-surface sm:text-sm">
+                {Math.round(redPct)}%
+              </span>
+              <span className="ml-auto mr-4 font-label text-xs font-black tabular-nums text-on-surface sm:text-sm">
+                {Math.round(bluePct)}%
               </span>
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* ── TUG BAR ── */}
-        <div className="relative w-full h-14 rounded-full overflow-visible bg-gray-950 border border-white/5 shadow-inner">
-          {/* Red fill */}
-          <motion.div
-            initial={{ width: "50%" }}
-            animate={{ width: `${redPct}%` }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className={`absolute left-0 top-0 h-full rounded-l-full ${
-              game.redSabotaged ? 'bg-gray-600 animate-pulse' :
-              game.redBoosted   ? 'shimmer-gold' :
-              'bg-gradient-to-r from-red-900 to-red-500'
-            }`}
-          />
-          {/* Blue fill */}
-          <motion.div
-            initial={{ width: "50%" }}
-            animate={{ width: `${bluePct}%` }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className={`absolute right-0 top-0 h-full rounded-r-full ${
-              game.blueSabotaged ? 'bg-gray-600 animate-pulse' :
-              game.blueBoosted   ? 'shimmer-gold' :
-              'bg-gradient-to-l from-blue-900 to-blue-500'
-            }`}
-          />
-
-          {/* Moving center knot */}
-          <motion.div
-            initial={{ left: "50%" }}
-            animate={{ left: `${redPct}%` }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="absolute top-1/2 z-10"
-            style={{ transform: 'translate(-50%, -50%)' }}
-          >
-            <div className="w-20 h-20 rounded-full bg-white border-4 border-indigo-500 flex items-center justify-center text-4xl shadow-[0_0_40px_rgba(99,102,241,0.8)]">
-              🚀
-            </div>
-          </motion.div>
-
-          {/* Percentage labels */}
-          <div className="absolute inset-0 flex items-center pointer-events-none select-none">
-            <span className="ml-4 text-white/60 font-black text-sm">{Math.round(redPct)}%</span>
-            <span className="ml-auto mr-4 text-white/60 font-black text-sm">{Math.round(bluePct)}%</span>
-          </div>
-        </div>
-
-        {/* ── GMONAD COMMUNITY TX LEADERBOARD ── */}
-        <div className="rounded-2xl border border-violet-500/20 bg-[#080810]/90 p-5 shadow-[0_0_40px_rgba(139,92,246,0.08)]">
+        {/* ── Social pressure (stitched panel) ── */}
+        <section className="rounded-sm bg-surface-container-high p-5 sm:p-8 stitched-border shadow-patch">
           <CommunityStatsBoard variant="full" showShare />
-        </div>
+        </section>
 
-        {/* ── BOTTOM GRID ── */}
-        <div className="mt-auto grid grid-cols-1 gap-5 md:grid-cols-3">
+        {/* ── Bottom grid ── */}
+        <div className="mt-auto grid grid-cols-1 gap-5 pb-4 md:grid-cols-3 md:gap-6">
 
           {/* MVP Leaderboard */}
-          <div className="col-span-1 bg-white/3 border border-white/5 rounded-2xl p-5 flex flex-col gap-3">
-            <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">🏆 MVP BOARD</span>
+          <div className="col-span-1 flex flex-col gap-3 rounded-sm bg-surface-container-high p-5 stitched-border">
+            <span className="font-label text-[10px] font-black uppercase tracking-widest text-outline">
+              🏆 MVP BOARD
+            </span>
             {top3.length === 0 ? (
-              <span className="text-xs text-gray-600 animate-pulse">Waiting for players…</span>
+              <span className="animate-pulse font-body text-xs text-outline">Waiting for players…</span>
             ) : top3.map((p, i) => {
               const meta = ROLE_META[p.roleId];
               const score = p.pulls + p.specials * 5;
@@ -476,14 +534,16 @@ export default function TugmonDashboard() {
                       <span className={`text-xs font-black ${p.team === 1 ? 'text-red-400' : 'text-blue-400'}`}>
                         {p.nickname || `${p.address.slice(0,6)}…`}
                       </span>
-                      <span className="text-[9px] text-gray-600">{meta.emoji} {meta.label}</span>
+                      <span className="font-body text-[9px] text-outline">
+                        {meta.emoji} {meta.label}
+                      </span>
                     </div>
                   </div>
-                  <span className="font-black text-white tabular-nums">{score}</span>
+                  <span className="font-label font-black tabular-nums text-on-surface">{score}</span>
                 </div>
               );
             })}
-            <div className="mt-auto pt-2 border-t border-white/5 text-[9px] text-gray-700">
+            <div className="mt-auto border-t border-dashed border-outline-variant pt-2 font-label text-[9px] text-outline">
               {players.size} players joined
             </div>
           </div>
@@ -491,36 +551,42 @@ export default function TugmonDashboard() {
           {/* Center stats */}
           <div className="col-span-1 flex flex-col gap-4">
             {/* Contract */}
-            <div className="bg-white/3 border border-white/5 rounded-2xl p-4 flex flex-col gap-1">
-              <span className="text-[9px] text-gray-600 font-bold uppercase tracking-widest">CONTRACT</span>
-              <span className="font-mono text-indigo-400 text-xs truncate">{CONTRACT_ADDRESS}</span>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-ping inline-block" />
-                <span className="text-[9px] text-green-500 font-bold">LIVE</span>
+            <div className="flex flex-col gap-1 rounded-sm bg-surface-container-high p-4 stitched-border">
+              <span className="font-label text-[9px] font-bold uppercase tracking-widest text-outline">
+                CONTRACT
+              </span>
+              <span className="truncate font-mono text-xs text-primary">{CONTRACT_ADDRESS}</span>
+              <div className="mt-1 flex items-center gap-2">
+                <span className="inline-block h-1.5 w-1.5 animate-ping rounded-full bg-tertiary" />
+                <span className="font-label text-[9px] font-bold text-tertiary">LIVE</span>
               </div>
             </div>
 
             {/* Countdown */}
-            <div className="bg-white/3 border border-white/5 rounded-2xl p-4 flex flex-col gap-1 flex-1">
-              <span className="text-[9px] text-gray-600 font-bold uppercase tracking-widest">ROUND RESET</span>
-              <span className="font-orbitron font-black text-white text-2xl tabular-nums">{countdown}</span>
+            <div className="flex flex-1 flex-col gap-1 rounded-sm bg-surface-container-high p-4 stitched-border">
+              <span className="font-label text-[9px] font-bold uppercase tracking-widest text-outline">
+                ROUND RESET
+              </span>
+              <span className="font-label text-2xl font-black tabular-nums text-on-surface">{countdown}</span>
             </div>
           </div>
 
           {/* QR Code */}
-          <div className="col-span-1 bg-white/3 border border-white/5 rounded-2xl p-5 flex flex-col items-center gap-3">
-            <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">Scan to play</span>
-            <div className="bg-white rounded-xl p-2">
+          <div className="col-span-1 flex flex-col items-center gap-3 rounded-sm bg-surface-container-high p-5 stitched-border">
+            <span className="font-label text-[10px] font-black uppercase tracking-widest text-outline">
+              Scan to play
+            </span>
+            <div className="rounded-sm bg-white p-2 shadow-patch">
               <QRCodeSVG
                 value={`${appUrl}/play`}
                 size={120}
                 bgColor="#ffffff"
-                fgColor="#040408"
+                fgColor="#2c0097"
                 level="M"
               />
             </div>
             <div className="text-center">
-              <div className="text-[9px] text-gray-600 font-mono break-all">{appUrl}/play</div>
+              <div className="break-all font-mono text-[9px] text-outline">{appUrl}/play</div>
             </div>
           </div>
         </div>

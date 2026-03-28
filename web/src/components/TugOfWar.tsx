@@ -339,7 +339,7 @@ export default function TugOfWar() {
       ro.disconnect();
       window.removeEventListener("resize", resize);
     };
-  }, [playerTeam]);
+  }, [playerTeam, setupComplete]);
 
   const endRound = useCallback((w: Team | null) => {
     if (phaseRef.current !== "playing" || roundEndLockRef.current) return;
@@ -469,21 +469,21 @@ export default function TugOfWar() {
   if (!setupComplete) {
     const crewMeta = pickCrew ? GMONAD_COMMUNITIES.find((c) => c.id === pickCrew) : null;
     return (
-      <div className="flex min-h-0 flex-1 flex-col overflow-auto bg-[#080810] px-4 py-8 text-white">
+      <div className="flex min-h-0 flex-1 flex-col overflow-auto bg-surface-container-low px-4 py-8 text-on-surface">
         <div className="mx-auto w-full max-w-lg space-y-6">
           <div className="text-center">
-            <p className="font-mono text-[10px] uppercase tracking-[0.35em] text-violet-300/80">Offline · Gmonad War</p>
-            <h1 className="mt-2 text-2xl font-bold tracking-tight">Pick rope & crew</h1>
-            <p className="mt-2 text-sm text-white/45">Same flow as live play — no chain, local scores only.</p>
+            <p className="font-label text-[10px] uppercase tracking-[0.35em] text-tertiary">Offline · Gmonad War</p>
+            <h1 className="mt-2 font-headline text-2xl font-bold tracking-tight">Pick rope & crew</h1>
+            <p className="mt-2 font-body text-sm text-on-surface-variant">Same flow as live play — no chain, local scores only.</p>
           </div>
           <div>
-            <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-white/35">Rope side</p>
+            <p className="mb-2 font-label text-[10px] font-bold uppercase tracking-[0.2em] text-outline">Rope side</p>
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={() => setPickRope("red")}
-                className={`rounded-2xl border-2 py-4 text-lg font-black ${
-                  pickRope === "red" ? "border-red-400 bg-red-950/50" : "border-white/10 bg-white/[0.03]"
+                className={`rounded-sm border-2 border-dashed py-4 font-headline text-lg font-black ${
+                  pickRope === "red" ? "border-red-400 bg-red-950/50" : "border-outline-variant bg-surface-container-high"
                 }`}
               >
                 RED
@@ -491,8 +491,8 @@ export default function TugOfWar() {
               <button
                 type="button"
                 onClick={() => setPickRope("blue")}
-                className={`rounded-2xl border-2 py-4 text-lg font-black ${
-                  pickRope === "blue" ? "border-blue-400 bg-blue-950/50" : "border-white/10 bg-white/[0.03]"
+                className={`rounded-sm border-2 border-dashed py-4 font-headline text-lg font-black ${
+                  pickRope === "blue" ? "border-blue-400 bg-blue-950/50" : "border-outline-variant bg-surface-container-high"
                 }`}
               >
                 BLUE
@@ -500,15 +500,15 @@ export default function TugOfWar() {
             </div>
           </div>
           <div>
-            <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-white/35">Crew</p>
+            <p className="mb-2 font-label text-[10px] font-bold uppercase tracking-[0.2em] text-outline">Crew</p>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {GMONAD_COMMUNITIES.map((c) => (
                 <button
                   key={c.id}
                   type="button"
                   onClick={() => setPickCrew(c.id)}
-                  className={`rounded-xl border px-3 py-2.5 text-left text-sm ${
-                    pickCrew === c.id ? "border-violet-400 bg-violet-950/40" : "border-white/10 bg-white/[0.03]"
+                  className={`rounded-sm border border-dashed px-3 py-2.5 text-left text-sm ${
+                    pickCrew === c.id ? "border-primary bg-primary/10" : "border-outline-variant bg-surface-container-high"
                   }`}
                 >
                   <span className="mr-2">{c.emoji}</span>
@@ -526,12 +526,12 @@ export default function TugOfWar() {
               setPlayerRole(pickRole());
               setSetupComplete(true);
             }}
-            className="w-full rounded-xl bg-white py-3.5 text-sm font-semibold text-[#040408] disabled:opacity-40"
+            className="w-full bg-gradient-to-br from-primary to-primary-container py-3.5 font-headline text-sm font-bold uppercase tracking-wide text-on-primary disabled:opacity-40"
           >
             Start match
           </button>
           {crewMeta && pickRope && (
-            <p className="text-center text-[11px] text-white/35">
+            <p className="text-center font-body text-[11px] text-outline">
               Playing as {crewMeta.name} on {pickRope.toUpperCase()} — offline mock
             </p>
           )}
@@ -542,11 +542,11 @@ export default function TugOfWar() {
 
   return (
     <div
-      className="relative flex h-full min-h-0 w-full flex-1 select-none flex-col overflow-hidden bg-[#080810] font-mono touch-none"
+      className="relative flex h-full min-h-0 w-full flex-1 select-none flex-col overflow-hidden bg-surface-container-low font-mono touch-none"
       style={{ touchAction: "none" }}
     >
-      <div className="flex shrink-0 justify-center bg-[#080810] py-0.5 pt-2">
-        <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] px-3.5 py-1">
+      <div className="flex shrink-0 justify-center bg-surface-container-low py-0.5 pt-2">
+        <div className="glass-panel flex items-center gap-1.5 rounded-full border border-dashed border-outline-variant px-3.5 py-1">
           <span
             className="h-1.5 w-1.5 rounded-full"
             style={{
@@ -554,15 +554,15 @@ export default function TugOfWar() {
               boxShadow: phase === "playing" ? "0 0 6px #4ade80" : undefined,
             }}
           />
-          <span className="text-[10px] font-bold tracking-[0.2em] text-white/70">
+          <span className="font-label text-[10px] font-bold tracking-[0.2em] text-on-surface-variant">
             {phase === "playing" ? "MATCH LIVE" : "ROUND OVER"}
           </span>
         </div>
       </div>
 
-      <div className="flex shrink-0 gap-2 bg-[#080810] px-2.5 pb-1.5 pt-2">
-        <div className="min-w-0 flex-1 rounded-2xl border border-white/[0.09] bg-white/[0.04] px-3 py-2.5">
-          <div className="mb-1 text-[9px] font-bold tracking-[0.2em] text-white/35">YOU</div>
+      <div className="flex shrink-0 gap-2 bg-surface-container-low px-2.5 pb-1.5 pt-2">
+        <div className="min-w-0 flex-1 rounded-sm border border-dashed border-outline-variant/60 bg-surface-container/80 px-3 py-2.5">
+          <div className="mb-1 font-label text-[9px] font-bold tracking-[0.2em] text-on-surface-variant">YOU</div>
           <div className="flex flex-wrap items-baseline gap-2">
             <span
               className="text-[32px] font-black leading-none tracking-tight"
@@ -570,21 +570,21 @@ export default function TugOfWar() {
             >
               {Math.floor(pScore)}
             </span>
-            <span className="text-[11px] font-medium text-white/45">{playerRole.label}</span>
+            <span className="font-body text-[11px] font-medium text-on-surface-variant">{playerRole.label}</span>
           </div>
           <div className="mt-1 text-[9px] opacity-80" style={{ color: playerRole.color }}>
             {playerTeam.toUpperCase()} TEAM
           </div>
         </div>
 
-        <div className="flex w-20 shrink-0 flex-col items-center justify-center rounded-2xl border border-indigo-500/20 bg-indigo-500/[0.08] px-1 py-2">
-          <div className="mb-0.5 text-[8px] font-bold tracking-[0.25em] text-indigo-300/60">TPS</div>
-          <div className="text-[28px] font-black leading-none text-indigo-300">{tps}</div>
-          <div className="mt-0.5 text-[8px] text-indigo-300/40">pulls/s</div>
+        <div className="flex w-20 shrink-0 flex-col items-center justify-center rounded-sm border border-dashed border-primary/35 bg-primary/5 px-1 py-2">
+          <div className="mb-0.5 font-label text-[8px] font-bold tracking-[0.25em] text-primary/70">TPS</div>
+          <div className="text-[28px] font-black leading-none text-primary">{tps}</div>
+          <div className="mt-0.5 font-label text-[8px] text-primary/50">pulls/s</div>
         </div>
 
-        <div className="min-w-0 flex-1 rounded-2xl border border-white/[0.09] bg-white/[0.04] px-3 py-2.5 text-right">
-          <div className="mb-1 text-[9px] font-bold tracking-[0.2em] text-white/35">RIVAL</div>
+        <div className="min-w-0 flex-1 rounded-sm border border-dashed border-outline-variant/60 bg-surface-container/80 px-3 py-2.5 text-right">
+          <div className="mb-1 font-label text-[9px] font-bold tracking-[0.2em] text-on-surface-variant">RIVAL</div>
           <div
             className="text-[32px] font-black leading-none tracking-tight"
             style={{
@@ -597,7 +597,7 @@ export default function TugOfWar() {
           {enemyFrozen ? (
             <div className="mt-1 text-[9px] font-bold text-sky-300">❄ FROZEN</div>
           ) : (
-            <div className="mt-1 text-[9px] text-white/30">{enemyTeam.toUpperCase()} TEAM</div>
+            <div className="mt-1 font-label text-[9px] text-outline">{enemyTeam.toUpperCase()} TEAM</div>
           )}
         </div>
       </div>
@@ -611,7 +611,7 @@ export default function TugOfWar() {
         <div className="absolute left-1/2 top-1/2 z-[1] h-[calc(100%+4px)] w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-sm bg-gradient-to-b from-amber-200 to-amber-500 shadow-[0_0_12px_#fbbf2488]" />
       </div>
 
-      <div className="relative min-h-0 flex-1 bg-[#050508]">
+      <div className="relative min-h-0 flex-1 bg-surface-container-low">
         <canvas
           ref={canvasRef}
           className="block h-full w-full touch-none [image-rendering:pixelated]"
@@ -660,7 +660,7 @@ export default function TugOfWar() {
         </div>
       )}
 
-      <div className="shrink-0 border-t border-white/[0.07] bg-gradient-to-b from-[#0b0b14] to-[#06060d] px-3 pb-[max(12px,env(safe-area-inset-bottom))] pt-2.5">
+      <div className="shrink-0 border-t border-dashed border-outline-variant bg-gradient-to-b from-surface-container to-surface-container-low px-3 pb-[max(12px,env(safe-area-inset-bottom))] pt-2.5">
         <div className="mb-2 flex min-h-[18px] flex-wrap gap-1.5">
           {playerFrozen && <Pill label="❄ YOU ARE FROZEN" color="#93c5fd" />}
           {boostActive && <Pill label="⚡ BOOST ACTIVE" color="#fbbf24" />}
