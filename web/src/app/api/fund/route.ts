@@ -1,10 +1,15 @@
 import { NextResponse } from "next/server";
 import { ethers } from "ethers";
+import { getClientIp } from "@/lib/clientIp";
+import {
+  checkAddressFundingCooldown,
+  checkIpFundingLimit,
+  recordAddressFunded,
+  recordIpFundSuccess,
+} from "@/lib/fundingRateLimit";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
-
-const addressLastFunded = new Map<string, number>();
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -25,6 +30,7 @@ export async function POST(request: Request) {
     }
 
     const normalizedAddress = address.toLowerCase();
+    const clientIp = getClientIp(request);
 
     const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || "https://testnet-rpc.monad.xyz";
     const provider = new ethers.JsonRpcProvider(rpcUrl);
@@ -45,7 +51,7 @@ export async function POST(request: Request) {
 
     const balance = await provider.getBalance(address);
     const sendAmount = ethers.parseEther(process.env.FUNDING_AMOUNT_ETH || "1.0");
-    const minBalance = ethers.parseEther("0.10");
+    const minBalance = ethers.parseEther(process.env.FUNDING_MIN_BALANCE_ETH || "0.10");
 
     if (balance >= minBalance) {
       return NextResponse.json({
@@ -56,14 +62,24 @@ export async function POST(request: Request) {
     }
 
     const rateLimitSeconds = Number(process.env.FUNDING_RATE_LIMIT_SECONDS || 300);
-    const lastFunded = addressLastFunded.get(normalizedAddress) ?? 0;
-    const elapsed = (Date.now() - lastFunded) / 1000;
-
-    if (elapsed < rateLimitSeconds && lastFunded > 0) {
-      const waitSeconds = Math.ceil(rateLimitSeconds - elapsed);
+    const addrCheck = await checkAddressFundingCooldown(normalizedAddress, rateLimitSeconds);
+    if (!addrCheck.ok) {
       return NextResponse.json(
         {
-          error: `Rate limited. Wait ${waitSeconds}s or contact the operator.`,
+          error: `Rate limited. Wait ${addrCheck.waitSeconds}s or contact the operator.`,
+          rateLimited: true,
+        },
+        { status: 429 }
+      );
+    }
+
+    const ipMax = Number(process.env.FUNDING_IP_MAX_FUNDS || 0);
+    const ipWindow = Number(process.env.FUNDING_IP_WINDOW_SECONDS || 3600);
+    const ipCheck = await checkIpFundingLimit(clientIp, ipMax, ipWindow);
+    if (!ipCheck.ok) {
+      return NextResponse.json(
+        {
+          error: `Too many funding requests from this network. Retry in ${ipCheck.retryAfterSeconds}s.`,
           rateLimited: true,
         },
         { status: 429 }
@@ -80,14 +96,13 @@ export async function POST(request: Request) {
     }
 
     console.log(
-      `Funding ${address} with ${ethers.formatEther(sendAmount)} MON from ${funderWallet.address}`
+      `Funding ${address} with ${ethers.formatEther(sendAmount)} MON from ${funderWallet.address} (ip=${clientIp})`
     );
     const tx = await funderWallet.sendTransaction({ to: address, value: sendAmount });
 
-    addressLastFunded.set(normalizedAddress, Date.now());
+    await recordAddressFunded(normalizedAddress);
+    await recordIpFundSuccess(clientIp, ipWindow);
 
-    // Do not await tx.wait(1) here: Vercel serverless often times out before the tx is
-    // mined. The client already calls waitForBalance() after this response.
     return NextResponse.json({
       success: true,
       txHash: tx.hash,

@@ -1,58 +1,132 @@
-# 🚀 Tugmon: Cosmic Tug-of-War on Monad
+# Tugmon — Cosmic tug-of-war on Monad
 
-**Tugmon**, Monad ağının "Ludicrous Speed" (10.000 TPS) kapasitesini ve sıfıra yakın işlem ücretlerini kanıtlamak için tasarlanmış, devasa çok oyunculu (MMO) ve tamamen on-chain çalışan interaktif bir sahne şovudur. 
+Tugmon is a mobile-first web arena: players tap to pull on-chain, a big screen shows the live board, and a faucet funds burner wallets so nobody installs a browser wallet for the demo.
 
-Geleneksel Web3 UX sürtünmelerini ortadan kaldırarak, salondaki tüm izleyicileri saniyeler içinde anlık transaction üreten birer test cihazına dönüştürür.
-
-## 🎯 Çözülen Problem
-Web3 projelerinin jüri ve kullanıcı sunumlarında ağ hızının (TPS) sadece "teorik" olarak anlatılması. Tugmon, cüzdan kurma zorunluluğunu (Burner Wallet ile) aşarak tüm salonu aynı anda Monad ağını strese sokmaya davet eder ve ağın gücünü **canlı, görsel ve rekabetçi** bir şekilde kanıtlar.
+**PRD vs this repo (one paragraph):** The original PRD described `Wallet.createRandom()` plus `localStorage` and a headline “TPS” tied to chain throughput. This app defaults to a **deterministic** session key derived from the display name (same name ⇒ same address on any device), with an optional **`NEXT_PUBLIC_BURNER_WALLET_MODE=random`** mode that matches the PRD-style random wallet stored in `localStorage`. The dashboard “activity” number is **estimated activity (events/s)** from contract events processed in the browser session, plus an optional **RPC snapshot** of transaction count in the latest block—not Monad’s global network TPS.
 
 ---
 
-## ⏱️ 24 Saatlik Geliştirme Planı ve Feature Set
+## Repo layout
 
-Aşağıdaki özellikler, 24 saatlik hackathon süresine uygun şekilde önceliklendirilmiş ve modüllere ayrılmıştır:
-
-### 🛠️ Faz 1: Akıllı Kontrat (0 - 4. Saat)
-Oyunun tüm mantığı ve durum yönetimi (state management) burada gerçekleşir.
-* **[ ] Takım ve Skor Yönetimi:** Kırmızı ve Mavi takımların global skorlarını tutan değişkenler.
-* **[ ] Rol Atama Motoru (RNG):** Katılan her cüzdana rastgele bir rol atanması (%70 Mühendis, %20 Güçlendirici, %10 Sabotajcı).
-* **[ ] Aksiyon Fonksiyonları:**
-  * `pull(uint8 team)`: Skoru 1 artırır.
-  * `boost(uint8 team)`: Takımın sonraki 5 saniyedeki tıklamalarını 2x çarpanla kaydeder.
-  * `sabotage(uint8 oppositeTeam)`: Karşı takımın skorunu belirli bir miktar düşürür veya 3 saniye kilitler.
-* **[ ] Monad Testnet Deploy:** Kontratın test ağına yüklenmesi ve ABI/Adres çıktılarının frontend için hazır edilmesi.
-
-### 🔑 Faz 2: Sürtünmesiz UX & Burner Wallet (4 - 8. Saat)
-Seyircinin sadece QR okutarak oyuna girmesini sağlayan kritik aşama.
-* **[ ] Otomatik Cüzdan Üretimi:** Kullanıcı siteye girdiği an `ethers.js` ile arka planda rastgele bir private key (Burner Wallet) oluşturulması ve `localStorage`'a kaydedilmesi.
-* **[ ] Otomatik Fonlama (Sponsor/Relayer):** Yeni oluşturulan burner cüzdana, işlem yapabilmesi için ana cüzdandan (senin faucet ile doldurduğun cüzdan) anında ufak bir miktar Monad Testnet token transfer edilmesi.
-* **[ ] Metamask Engeli Yok:** Kullanıcının hiçbir transaction'ı manuel onaylamaması (Tüm imzalar arka planda burner wallet ile atılacak).
-
-### 📱 Faz 3: Mobil Oyuncu Arayüzü (8 - 14. Saat)
-Seyircilerin telefonlarında göreceği, anında tepki veren savaş alanı.
-* **[ ] Takım ve Rol UI:** Kullanıcının takım rengine göre (Kırmızı/Mavi) şekillenen arayüz ve sahip olduğu rolün (Rozet) gösterimi.
-* **[ ] "PUMP" Butonu:** Ekranda devasa bir tıklama butonu.
-* **[ ] Görsel Geri Bildirim (Particle Effect):** `framer-motion` kullanılarak her tıklamada ekrandan fırlayan "+1" veya "🚀" emojileri.
-* **[ ] Özel Yetenek Butonları:** Eğer kullanıcı "Sabotajcı" veya "Güçlendirici" ise, cooldown (bekleme süresi) sayacı olan özel aksiyon butonlarının aktif edilmesi.
-
-### 🖥️ Faz 4: Dev Ekran Şovu / Dashboard (14 - 20. Saat)
-Sahneye yansıtılacak olan, Monad'ın gücünün sergilendiği ana ekran.
-* **[ ] CSS Flexbox Animasyonu:** Kırmızı ve Mavi renklerin, takımların skor yüzdesine göre (`width: %`) birbirini akıcı bir şekilde ittiği "Halat Çekme" barı.
-* **[ ] Canlı TPS Sayacı:** Kontrattaki event'leri dinleyerek (veya hızlı polling ile) Monad ağında o an saniyede kaç işlem gerçekleştiğini gösteren dijital sayaç.
-* **[ ] Liderlik Tablosu (MVP):** En çok transaction üreten veya kritik sabotajlar yapan top 3 burner wallet adresinin ekranda anlık listelenmesi.
-* **[ ] Görsel Efektler:** Nitro basıldığında veya sabotaj yendiğinde tüm ekranın titremesi/renk değiştirmesi (Tailwind conditional sınıfları ile).
-
-### 🧪 Faz 5: Test & Sunum Hazırlığı (20 - 24. Saat)
-* **[ ] Stres Testi:** Birden fazla sekme açılarak ağın ve RPC'nin limitlerinin test edilmesi.
-* **[ ] Jüri Oylama Entegrasyonu (Opsiyonel):** Jürinin vereceği bir kararın kontrattaki `boost` fonksiyonunu tetiklemesi.
-* **[ ] 3 Dakikalık Pitch Pratiği:** "Halat çekmeyi başlatıyorum, telefonları çıkarın!" diyeceğin sunum anının provası.
+| Path | Role |
+|------|------|
+| `web/` | Next.js App Router — play UI, dashboard, `/api/fund` |
+| `contracts/` | Hardhat — `TugmonArena.sol`, deploy script, tests |
 
 ---
 
-## 💻 Tech Stack
-* **Blockchain:** Monad Testnet
-* **Smart Contracts:** Solidity, Hardhat, OpenZeppelin
-* **Frontend:** Next.js (App Router), React, Tailwind CSS
-* **Web3 Integration:** Ethers.js
-* **Animations:** Framer Motion, CSS Transitions
+## Implemented features
+
+- **Smart contract:** Team scores, `join`, `pull`, role-gated `boost` / `sabotage`, timed windows, `GameReset`, `resetGame`.
+- **Burner funding:** `POST /api/fund` sends test MON to low-balance addresses using `FUNDING_PRIVATE_KEY`.
+- **Rate limits:** Per-address cooldown; optional per-IP cap; **Upstash Redis** when `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` are set (falls back to in-memory maps for local dev / single instance).
+- **Play (`/play`):** Nickname flow, auto-fund, `join`, canvas + pump, haptics, role actions.
+- **Dashboard (`/dashboard`):** Score bar, MVP-style top players, QR to play, TPS-style **event activity** + **last-block tx snapshot**.
+- **Offline demo (`/play/offline`):** Local-only UI (no chain).
+- **PWA:** `web/src/app/manifest.ts`, icons under `web/public/icons/`, `ServiceWorkerRegister` + `public/sw.js` (caches `/play/offline` after a successful visit in production).
+
+---
+
+## Environment variables
+
+Copy examples and fill in secrets locally (never commit real keys):
+
+```bash
+cp web/.env.example web/.env.local
+cp contracts/.env.example contracts/.env   # optional, for deploy
+```
+
+### `web/.env.example` (browser + server)
+
+| Variable | Purpose |
+|----------|---------|
+| `NEXT_PUBLIC_RPC_URL` | Monad (or local) JSON-RPC |
+| `NEXT_PUBLIC_CHAIN_ID` | e.g. `10143` (Monad testnet) |
+| `NEXT_PUBLIC_CONTRACT_ADDRESS` | Deployed `TugmonArena` |
+| `NEXT_PUBLIC_APP_URL` | Canonical URL for QR codes and links |
+| `NEXT_PUBLIC_BURNER_WALLET_MODE` | `deterministic` (default) or `random` |
+| `FUNDING_PRIVATE_KEY` | Faucet signer (server only) |
+| `FUNDING_AMOUNT_ETH` | Amount to send per fund |
+| `FUNDING_MIN_BALANCE_ETH` | Skip funding if balance ≥ this |
+| `FUNDING_RATE_LIMIT_SECONDS` | Per-address cooldown |
+| `FUNDING_IP_MAX_FUNDS` | Max successful funds per IP per window (`0` = off) |
+| `FUNDING_IP_WINDOW_SECONDS` | IP window length |
+| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | Durable rate limits (optional) |
+
+### `contracts/.env.example`
+
+| Variable | Purpose |
+|----------|---------|
+| `PRIVATE_KEY` | Deployer key for `monadTestnet` |
+| `MONAD_RPC_URL` | RPC for deploy |
+
+---
+
+## Local development
+
+### 1. Contracts
+
+```bash
+cd contracts
+npm install
+npx hardhat test
+```
+
+Optional local node:
+
+```bash
+npx hardhat node
+# another terminal:
+npx hardhat run scripts/deploy.js --network localhost
+```
+
+Point `web/.env.local` at `http://127.0.0.1:8545` and set `NEXT_PUBLIC_CONTRACT_ADDRESS` to the deployed address.
+
+### 2. Web app
+
+```bash
+cd web
+npm install
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000). Use `/play` on a phone and `/dashboard` on a projector.
+
+### 3. Production build
+
+```bash
+cd web && npm run build && npm start
+```
+
+---
+
+## Deploy (Monad testnet)
+
+1. Fund a deployer wallet with test MON.
+2. Set `contracts/.env` with `PRIVATE_KEY` and `MONAD_RPC_URL`.
+3. Deploy:
+
+   ```bash
+   cd contracts
+   npx hardhat run scripts/deploy.js --network monadTestnet
+   ```
+
+4. Put the printed address into `web` as `NEXT_PUBLIC_CONTRACT_ADDRESS` (and matching `NEXT_PUBLIC_RPC_URL` / `NEXT_PUBLIC_CHAIN_ID`).
+5. Configure `FUNDING_PRIVATE_KEY` on the host (Vercel, etc.) and optional Upstash for rate limits.
+6. Set `NEXT_PUBLIC_APP_URL` to your public origin so QR codes resolve correctly.
+
+---
+
+## Scripts
+
+| Location | Command | Meaning |
+|----------|---------|---------|
+| `web/` | `npm run dev` | Next.js dev server |
+| `web/` | `npm run build` | Production build |
+| `contracts/` | `npm test` | Hardhat tests |
+
+---
+
+## License
+
+See project files; hackathon / demo use unless you add a explicit license.

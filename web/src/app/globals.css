@@ -115,6 +115,19 @@ html, body {
 }
 .number-tick { animation: numberTick 0.15s ease-out; }
 
+/* ── Play / game card chrome ───────────────────────────────────────────────── */
+.game-card-shell {
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 32px 64px -32px rgba(0, 0, 0, 0.9);
+}
+.game-canvas-frame {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.07),
+    inset 0 48px 80px -20px rgba(0, 0, 0, 0.45);
+}
+
 /* ── Cooldown circular progress ───────────────────────────────────────────── */
 .cooldown-circle { transition: stroke-dashoffset 1s linear; }
 

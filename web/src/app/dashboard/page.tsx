@@ -52,6 +52,8 @@ export default function TugmonDashboard() {
   const [eventCount, setEventCount] = useState(0);
   const [loading,    setLoading]   = useState(true);
   const [flashOverlay, setFlash]   = useState<null | 'red' | 'yellow'>(null);
+  const [chainBlockTxCount, setChainBlockTxCount] = useState<number | null>(null);
+  const [chainBlockDeltaSec, setChainBlockDeltaSec] = useState<number | null>(null);
 
   const lastBlockRef = useRef<number>(0);
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
@@ -202,6 +204,35 @@ export default function TugmonDashboard() {
     };
   }, [triggerFlash, triggerSpotlight, upsertPlayer]);
 
+  // ── Chain snapshot (RPC): last block tx count — not global network TPS ───────
+  useEffect(() => {
+    const provider = new ethers.JsonRpcProvider(RPC_URL);
+    let cancelled = false;
+    const pollChain = async () => {
+      try {
+        const cur = await provider.getBlock('latest', true);
+        if (!cur || cancelled) return;
+        const txs = Array.isArray(cur.transactions) ? cur.transactions.length : 0;
+        let dt = 1;
+        const blockNum = Number(cur.number);
+        if (blockNum > 0) {
+          const prev = await provider.getBlock(blockNum - 1, false);
+          if (prev) dt = Math.max(1, Number(cur.timestamp - prev.timestamp));
+        }
+        if (!cancelled) {
+          setChainBlockTxCount(txs);
+          setChainBlockDeltaSec(dt);
+        }
+      } catch { /* ignore */ }
+    };
+    void pollChain();
+    const cid = setInterval(() => { void pollChain(); }, 3000);
+    return () => {
+      cancelled = true;
+      clearInterval(cid);
+    };
+  }, []);
+
   // ── Countdown ───────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!game.lastReset) return;
@@ -285,7 +316,11 @@ export default function TugmonDashboard() {
               Real-Time On-Chain · Monad Testnet
             </p>
           </div>
-          <TpsDisplay eventCount={eventCount} />
+          <TpsDisplay
+            eventCount={eventCount}
+            chainBlockTxCount={chainBlockTxCount}
+            chainBlockDeltaSec={chainBlockDeltaSec}
+          />
         </div>
 
         {/* ── GIANT SCORES ── */}

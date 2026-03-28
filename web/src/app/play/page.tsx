@@ -15,7 +15,12 @@ import {
   CONTRACT_ADDRESS as ENV_CONTRACT_ADDRESS,
 } from '@/utils/constants';
 import CanvasGame from '@/components/CanvasGame';
-import { getOrCreateBurnerWallet, fundBurnerWallet, waitForBalance } from '@/lib/burnerWallet';
+import {
+  getOrCreateBurnerWallet,
+  fundBurnerWallet,
+  waitForBalance,
+  getBurnerWalletMode,
+} from '@/lib/burnerWallet';
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
@@ -464,8 +469,11 @@ function GameSession() {
       {/* ── Wallet badge ── */}
       {burnerAddress && (
         <div className="absolute right-3 top-3 z-50 sm:right-6 sm:top-4">
-          <div className="rounded-lg border border-white/10 bg-black/50 px-2.5 py-1.5 font-mono text-[10px] text-white/55 backdrop-blur-md">
-            {balance} MON · {burnerAddress.slice(0, 6)}…{burnerAddress.slice(-4)}
+          <div className="rounded-full border border-white/[0.12] bg-black/55 px-3 py-1.5 font-mono text-[10px] text-white/65 shadow-lg shadow-black/40 backdrop-blur-md">
+            <span className="text-white/90">{balance}</span>{' '}
+            <span className="text-white/35">MON</span>
+            <span className="mx-1.5 text-white/20">·</span>
+            <span className="text-white/50">{burnerAddress.slice(0, 6)}…{burnerAddress.slice(-4)}</span>
           </div>
         </div>
       )}
@@ -559,8 +567,19 @@ function GameSession() {
             </div>
 
             <p className="text-center text-xs leading-relaxed text-white/35">
-              A temporary session wallet is created from your name. Funds may be topped up automatically on testnet.
+              A temporary session wallet is created for this app. Funds may be topped up automatically on testnet.
             </p>
+            {getBurnerWalletMode() === 'deterministic' ? (
+              <p className="rounded-xl border border-amber-500/25 bg-amber-500/[0.07] px-4 py-3 text-center text-[11px] leading-relaxed text-amber-100/85">
+                <span className="font-semibold text-amber-200/95">Note: </span>
+                The same display name always derives the same wallet address on any device—anyone choosing that name shares that session. Pick a unique name for demos.
+              </p>
+            ) : (
+              <p className="rounded-xl border border-sky-500/25 bg-sky-500/[0.07] px-4 py-3 text-center text-[11px] leading-relaxed text-sky-100/85">
+                <span className="font-semibold text-sky-200/95">Note: </span>
+                Your wallet is stored only in this browser (localStorage). Clearing site data creates a new address; your display name is separate from the key.
+              </p>
+            )}
           </motion.div>
         )}
 
@@ -613,10 +632,18 @@ function GameSession() {
 
         {/* ── PLAYING PHASE ── */}
         {phase === 'playing' && team && (
-          <div className="flex w-full flex-1 flex-col justify-center gap-4 pb-6 pt-2 sm:gap-6">
-            <p className="text-center text-[11px] font-medium uppercase tracking-[0.2em] text-white/35">
-              Match in progress
-            </p>
+          <div className="flex w-full flex-1 flex-col justify-center gap-3 pb-6 pt-2 sm:gap-5">
+            <div className="flex justify-center px-2">
+              <div className="inline-flex items-center gap-2.5 rounded-full border border-white/[0.1] bg-white/[0.04] px-3.5 py-2 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.7)] backdrop-blur-md sm:px-4">
+                <span className="relative flex h-2 w-2 shrink-0">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/70" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.8)]" />
+                </span>
+                <span className="font-orbitron text-[10px] font-bold uppercase tracking-[0.22em] text-white/55 sm:text-[11px]">
+                  Match live
+                </span>
+              </div>
+            </div>
             <CanvasGame
               game={game}
               team={team}

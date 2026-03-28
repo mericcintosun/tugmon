@@ -3,12 +3,35 @@ import { ethers } from "ethers";
 export const RPC_URL =
   process.env.NEXT_PUBLIC_RPC_URL || "https://testnet-rpc.monad.xyz";
 
+const LS_BURNER_PK = "tugmon_burner_pk_v1";
+
+export type BurnerWalletMode = "deterministic" | "random";
+
+export function getBurnerWalletMode(): BurnerWalletMode {
+  return process.env.NEXT_PUBLIC_BURNER_WALLET_MODE === "random" ? "random" : "deterministic";
+}
+
 /**
- * Deterministic burner wallet from player nickname.
- * Same username → same address, always. No localStorage needed.
+ * Session wallet for the play UI.
+ * - deterministic: `ethers.id("tugmon_arena_v1_${username}_burner_key")` — same name ⇒ same address everywhere.
+ * - random: `Wallet.createRandom()` stored in localStorage — same browser session; closer to classic PRD burner UX.
  */
 export function getOrCreateBurnerWallet(username: string): ethers.Wallet {
   const provider = new ethers.JsonRpcProvider(RPC_URL);
+
+  if (getBurnerWalletMode() === "random") {
+    if (typeof window === "undefined") {
+      throw new Error("Random burner wallet can only be created in the browser");
+    }
+    let pk = localStorage.getItem(LS_BURNER_PK);
+    if (!pk || !/^0x[0-9a-fA-F]{64}$/.test(pk)) {
+      const w = ethers.Wallet.createRandom();
+      pk = w.privateKey;
+      localStorage.setItem(LS_BURNER_PK, pk);
+    }
+    return new ethers.Wallet(pk, provider);
+  }
+
   const seed = `tugmon_arena_v1_${username}_burner_key`;
   const privateKey = ethers.id(seed);
   return new ethers.Wallet(privateKey, provider);
@@ -30,7 +53,7 @@ export async function fundBurnerWallet(address: string): Promise<{
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ address }),
     });
-    const data = await res.json() as Record<string, unknown>;
+    const data = (await res.json()) as Record<string, unknown>;
     return {
       success: Boolean(data.success),
       alreadyFunded: Boolean(data.alreadyFunded),
@@ -63,7 +86,7 @@ export async function waitForBalance(
     } catch {
       // ignore rpc errors during polling
     }
-    await new Promise(r => setTimeout(r, 1500));
+    await new Promise((r) => setTimeout(r, 1500));
   }
   return false;
 }

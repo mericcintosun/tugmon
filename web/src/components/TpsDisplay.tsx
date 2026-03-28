@@ -3,26 +3,36 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 interface TpsDisplayProps {
-  eventCount: number;    // increment each time a new on-chain event fires
-  compact?: boolean;     // mini version for mobile score strip
+  /** Increment each time the dashboard processes a new on-chain event (not global chain TPS). */
+  eventCount: number;
+  compact?: boolean;
+  /** When compact, omit trailing "TPS" if the parent already shows a label */
+  hideUnit?: boolean;
+  /** Latest block tx count from RPC (full txs in block body when supported). */
+  chainBlockTxCount?: number | null;
+  /** Block time Δ vs parent (seconds), for snapshot rate. */
+  chainBlockDeltaSec?: number | null;
 }
 
-const TpsDisplay: React.FC<TpsDisplayProps> = ({ eventCount, compact = false }) => {
+const TpsDisplay: React.FC<TpsDisplayProps> = ({
+  eventCount,
+  compact = false,
+  hideUnit = false,
+  chainBlockTxCount,
+  chainBlockDeltaSec,
+}) => {
   const [tps,         setTps]         = useState(0);
   const [displayTps,  setDisplayTps]  = useState(0);
   const [history,     setHistory]     = useState<number[]>([]);
   const countRef  = useRef(0);
   const prevCount = useRef(eventCount);
-  const tickKey   = useRef(0);
 
-  // Accumulate between ticks
   useEffect(() => {
     const delta = eventCount - prevCount.current;
     if (delta > 0) countRef.current += delta;
     prevCount.current = eventCount;
   }, [eventCount]);
 
-  // 1-second tick → EMA TPS
   useEffect(() => {
     const id = setInterval(() => {
       const raw = countRef.current;
@@ -32,12 +42,10 @@ const TpsDisplay: React.FC<TpsDisplayProps> = ({ eventCount, compact = false }) 
         setHistory(h => [...h.slice(-14), next]);
         return next;
       });
-      tickKey.current += 1;
     }, 1000);
     return () => clearInterval(id);
   }, []);
 
-  // Smooth display interpolation
   useEffect(() => {
     const id = setInterval(() => {
       setDisplayTps(prev => {
@@ -50,20 +58,45 @@ const TpsDisplay: React.FC<TpsDisplayProps> = ({ eventCount, compact = false }) 
   }, [tps]);
 
   const formatted = Math.round(displayTps).toLocaleString();
-  const barWidth  = Math.min((displayTps / 30) * 100, 100); // 30 TPS = full bar
+  const barWidth  = Math.min((displayTps / 30) * 100, 100);
+  const maxHist   = history.length ? Math.max(...history, 0.01) : 1;
+
+  const chainSnapshotRate =
+    chainBlockTxCount != null &&
+    chainBlockDeltaSec != null &&
+    chainBlockDeltaSec > 0
+      ? chainBlockTxCount / chainBlockDeltaSec
+      : null;
 
   if (compact) {
     return (
-      <div className="flex items-baseline gap-1">
-        <span className="font-orbitron text-lg font-black text-indigo-400">{formatted}</span>
-        <span className="text-[9px] font-bold text-indigo-600 uppercase">TPS</span>
+      <div className="flex flex-col items-center gap-0.5">
+        <div className="flex items-baseline justify-center gap-1">
+          <span
+            className="font-orbitron text-lg font-black tabular-nums text-indigo-300 sm:text-xl"
+            style={{ textShadow: '0 0 18px rgba(129, 140, 248, 0.55)' }}
+          >
+            {formatted}
+          </span>
+          {!hideUnit && (
+            <span className="text-[9px] font-bold uppercase text-indigo-500/90">evt/s</span>
+          )}
+        </div>
+        <span className="text-[8px] font-medium uppercase tracking-wider text-white/35">
+          est. activity
+        </span>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col items-end gap-1">
-      <div className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-500">MONAD THROUGHPUT</div>
+    <div className="flex max-w-[min(100%,22rem)] flex-col items-end gap-1">
+      <div className="text-right text-[10px] font-bold uppercase tracking-[0.2em] text-indigo-400/90">
+        Estimated activity (events/s)
+      </div>
+      <div className="text-[9px] text-right leading-snug text-gray-500">
+        Derived from contract events processed in this session — not network-wide Monad TPS.
+      </div>
       <div className="flex items-baseline gap-2">
         <span
           className="font-orbitron font-black text-white tabular-nums"
@@ -71,22 +104,33 @@ const TpsDisplay: React.FC<TpsDisplayProps> = ({ eventCount, compact = false }) 
         >
           {formatted}
         </span>
-        <span className="font-orbitron font-bold text-indigo-400 text-2xl animate-pulse">TPS</span>
+        <span className="font-orbitron font-bold text-indigo-400 text-2xl animate-pulse">evt/s</span>
       </div>
 
-      {/* Mini bar chart — last 15 seconds */}
-      <div className="flex items-end gap-0.5 h-5">
+      {chainBlockTxCount != null && chainBlockDeltaSec != null && (
+        <div className="mt-1 max-w-sm text-right text-[10px] leading-relaxed text-gray-400">
+          <span className="font-semibold text-gray-300">Chain snapshot: </span>
+          last block <span className="font-mono text-indigo-200/90">{chainBlockTxCount}</span> txs
+          {chainSnapshotRate != null && (
+            <>
+              {' '}
+              (~{chainSnapshotRate.toFixed(1)} txs/s over {chainBlockDeltaSec}s block interval)
+            </>
+          )}
+        </div>
+      )}
+
+      <div className="flex h-5 items-end gap-0.5">
         {history.map((v, i) => (
           <div
             key={i}
             className="w-2.5 rounded-sm bg-indigo-500/60 transition-all duration-300"
-            style={{ height: `${Math.max(3, (v / Math.max(...history, 1)) * 100)}%` }}
+            style={{ height: `${Math.max(3, (v / maxHist) * 100)}%` }}
           />
         ))}
       </div>
 
-      {/* Linear bar */}
-      <div className="w-48 h-1 bg-gray-800 rounded-full overflow-hidden">
+      <div className="h-1 w-48 overflow-hidden rounded-full bg-gray-800">
         <div
           className="h-full bg-indigo-500 transition-all duration-500"
           style={{ width: `${barWidth}%`, boxShadow: '0 0 8px rgba(99,102,241,0.8)' }}
