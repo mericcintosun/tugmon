@@ -1,7 +1,7 @@
 // ── Contract Address ──────────────────────────────────────────────────────────
 export const CONTRACT_ADDRESS =
-  process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ||
-  "0x0000000000000000000000000000000000000000";
+  (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ||
+  "0x0000000000000000000000000000000000000000").trim();
 
 // ── ABI ───────────────────────────────────────────────────────────────────────
 export const CONTRACT_ABI = [

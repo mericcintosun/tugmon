@@ -43,7 +43,10 @@ export async function hasCommunityNftWithProvider(
   const addr = getNftContractAddress(communityId);
   if (!addr || !ethers.isAddress(mainWallet)) return false;
 
-  const provider = new ethers.BrowserProvider(browserProvider);
+  const provider = new ethers.BrowserProvider(browserProvider, {
+    chainId: 10143,
+    name: "monad-testnet",
+  });
   const c = new ethers.Contract(addr, erc721Abi, provider);
   try {
     const bal = await c.balanceOf(mainWallet);
