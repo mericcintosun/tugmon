@@ -1,0 +1,95 @@
+Testnet tokenları gelene kadar elimizi kolumuzu bağlayıp beklemek hackathon ruhuna aykırı! Biz projeyi doğrudan kendi bilgisayarımızda (Localhost - Hardhat Node) geliştirip bitirebiliriz. Tokenlar geldiği an tek bir komutla Monad ağına aktarırız.
+
+İşte tam da bir jürinin ve takımın görmek isteyeceği netlikte, senin teknik kaslarına uygun olarak hazırladığım Tugmon PRD (Product Requirements Document). Bunu kopyalayıp PRD.txt veya PRD.md olarak kaydedebilirsin:
+
+PRODUCT REQUIREMENTS DOCUMENT (PRD)
+Proje Adı: Tugmon (Monad Blitz: Cosmic Tug-of-War)
+Platform: Web (Mobil Öncelikli PWA & Dev Ekran Dashboard)
+Ağ: Monad Testnet (Geliştirme aşamasında Hardhat Local Node)
+
+1. VİZYON VE HEDEF
+Monad'ın "Ludicrous Speed" (10.000 TPS) ve düşük maliyet vaadini, hackathon jürisine ve seyircisine sadece teoride anlatmak yerine fiziksel olarak yaşatmak. Tüm salonun cihazlarını aynı anda kullanarak ağı strese sokan, sürtünmesiz (cüzdan kurulumu gerektirmeyen) ve canlı oylama dinamiklerini hackleyen etkileşimli bir şov ürünü yaratmak.
+
+2. TEMEL KULLANICI AKIŞI (USER FLOW)
+Giriş: Seyirci dev ekrandaki QR kodu okutur.
+
+Sıfır Sürtünme (Onboarding): Kullanıcı cüzdan bağlamaz. Next.js arka planda saniyeler içinde bir "Burner Wallet" üretir ve ana kasadan o cüzdana gas parası ateşlenir.
+
+Rol Dağılımı: Akıllı kontrat kullanıcıyı Kırmızı veya Mavi takıma atar; rastgele bir rol verir (Mühendis, Sabotajcı, Güçlendirici).
+
+Aksiyon: Kullanıcı telefonundaki devasa butona çılgınca tıklar. Her tıklama Monad ağında gerçek bir transaction'dır. Özel rolü varsa (örn: Sabotaj) bekleme süresi dolduğunda o yeteneği kullanır.
+
+Görsel Geri Bildirim: Telefonunda tıklama efektlerini görürken, kafasını kaldırdığında dev ekranda Monad TPS sayacının çıldırdığını ve takımların halat çekişmesini canlı izler.
+
+3. GELİŞTİRİLECEK ÖZELLİKLER (MVP - 24 SAAT)
+A. Akıllı Kontrat (Solidity) Özellikleri
+Skor Yönetimi: Kırmızı ve Mavi takımların anlık skor statelerinin tutulması.
+
+Fonksiyonlar: * pull(uint8 team): Temel transaction. Skoru artırır.
+
+boost(uint8 team): Nitro. 5 saniye boyunca o takımın tıklamalarını 2x sayar.
+
+sabotage(uint8 targetTeam): Karşı takımın skorunu anlık dondurur.
+
+Eventler: Frontend'in dinleyebilmesi için her aksiyonda (Pulled, Sabotaged, Boosted) event fırlatılması.
+
+B. Backend / API Özellikleri (Next.js Serverless)
+Funder API (/api/fund): Burner wallet oluşturan kullanıcının cüzdanına, sunucudaki gizli Private Key'i kullanarak anında 0.01 Test MONAD gönderen endpoint. (Bot koruması olarak basit bir rate limit veya IP kontrolü eklenebilir).
+
+C. Mobil Oyuncu Arayüzü (Next.js & Tailwind)
+Burner Wallet Generator: ethers.js ile sayfa yüklendiğinde Wallet.createRandom() çalıştırıp localStorage'a kaydetme.
+
+Oyun Alanı UI: Seçilen takıma göre Kırmızı/Mavi tema. Ortada devasa bir PUMP butonu.
+
+Haptik & Efektler: Tıklandığında telefonun titremesi (navigator.vibrate) ve ekranda beliren +1 emojileri.
+
+D. Sahne Dashboard (Next.js & CSS Animasyonları)
+Canlı Arena: Flexbox width hilesi ile skorların birbirini ittiği dinamik bar.
+
+TPS Metresi: Kontrattan gelen eventlerin saniyede kaç kere tetiklendiğini hesaplayan canlı teknolojik sayaç.
+
+MVP Tablosu: O an en çok tıklayan 3 burner wallet adresinin (son 4 hanesinin) listelenmesi.
+
+4. 24 SAATLİK GELİŞTİRME HARİTASI (TIMELINE)
+Saat 0-4: Yerel Altyapı & Kontrat
+
+Hardhat local node (npx hardhat node) ayağa kaldırılacak.
+
+TugmonArena.sol yazılıp local node'a deploy edilecek. Testnet'e ihtiyaç yok.
+
+Saat 4-8: Cüzdansız Giriş (The Magic)
+
+Next.js projesi kurulacak.
+
+Burner Wallet üretimi ve Funder API kodlanacak.
+
+Not: Local node'da Hardhat'in verdiği ilk hesabı (Account #0) Funder API için kasa olarak kullanacağız.
+
+Saat 8-14: Mobil Tıklama Arayüzü
+
+Oyuncu UI bileşenleri yapılacak.
+
+Akıllı kontrattaki pull fonksiyonu butonlara bağlanacak.
+
+Saat 14-20: Sahne Şovu & Dashboard
+
+Skorları okuyan ve ekrandaki CSS barını güncelleyen yapı kurulacak.
+
+Canlı TPS hesaplama algoritması eklenecek.
+
+Saat 20-24: Göç, Test ve Sunum
+
+Monad Testnet tokenları gelmiş olacak.
+
+Kontrat Hardhat node'dan Testnet'e deploy edilecek. RPC URL değiştirilecek.
+
+Gerçek cihazlarla stres testi yapılacak.
+
+3 dakikalık pitch provası.
+
+5. TEKNİK STACK
+Blockchain: Solidity, Hardhat, Ethers.js v6
+
+Frontend/API: Next.js (App Router), React, TypeScript
+
+Styling & UI: Tailwind CSS, DaisyUI, Framer Motion (Efektler için)
