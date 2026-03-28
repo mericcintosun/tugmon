@@ -20,6 +20,10 @@ export function CommunityStatsBoard({
     void (async () => {
       try {
         const res = await fetch("/api/community-stats", { cache: "no-store" });
+        if (!res.ok) {
+          if (!cancelled) setErr(`Stats unavailable (${res.status})`);
+          return;
+        }
         const data = (await res.json()) as { totals?: Totals; source?: string };
         if (!cancelled && data.totals) setTotals(data.totals);
       } catch {
@@ -28,9 +32,12 @@ export function CommunityStatsBoard({
     })();
     const id = setInterval(() => {
       void fetch("/api/community-stats", { cache: "no-store" })
-        .then((r) => r.json())
-        .then((data: { totals?: Totals }) => {
-          if (data.totals) setTotals(data.totals);
+        .then((r) => {
+          if (!r.ok) return null;
+          return r.json();
+        })
+        .then((data: { totals?: Totals } | null) => {
+          if (data?.totals) setTotals(data.totals);
         })
         .catch(() => {});
     }, 22000);

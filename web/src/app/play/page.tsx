@@ -182,11 +182,14 @@ function GameSession() {
     try {
       const provider = getProvider();
 
-      // Get current block
       const currentBlock = await provider.getBlockNumber();
-      const fromBlock = lastBlockRef.current > 0 ? lastBlockRef.current : Math.max(0, currentBlock - 5);
-      if (currentBlock <= lastBlockRef.current) return;
-      lastBlockRef.current = currentBlock;
+      const lastProcessed = lastBlockRef.current;
+      if (currentBlock <= lastProcessed) return;
+
+      /** Next block after the last one we scanned — avoids replaying the same block (dupe TPS / boost timers). */
+      const fromBlock =
+        lastProcessed > 0 ? lastProcessed + 1 : Math.max(0, currentBlock - 5);
+      if (fromBlock > currentBlock) return;
 
       const iface = new ethers.Interface(CONTRACT_ABI);
       const logs = await provider.getLogs({
@@ -237,8 +240,10 @@ function GameSession() {
           // unknown log, skip
         }
       }
+
+      lastBlockRef.current = currentBlock;
     } catch {
-      // network errors — silently ignore
+      // network errors — do not advance lastBlockRef so we retry the same range
     }
   }, [getProvider, pollGameState]);
 
@@ -900,7 +905,7 @@ function GameSession() {
 
         {/* ── PLAYING PHASE ── */}
         {phase === 'playing' && team && (
-          <div className="flex w-full flex-1 flex-col justify-center gap-3 pb-6 pt-2 sm:gap-5">
+          <div className="flex min-h-0 w-full flex-1 flex-col justify-center gap-3 pb-6 pt-2 sm:gap-5">
             <div className="flex justify-center px-2">
               <div className="glass-panel inline-flex items-center gap-2.5 rounded-full border border-dashed border-outline-variant px-3.5 py-2 shadow-patch sm:px-4">
                 <span className="relative flex h-2 w-2 shrink-0">

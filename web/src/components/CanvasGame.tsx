@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useEffect, useCallback, useState } from "react";
+import React, { useRef, useEffect, useLayoutEffect, useCallback, useState } from "react";
 import { ROLE_META, type RoleId, type TeamId, TEAMS } from "@/utils/constants";
 import TpsDisplay from "@/components/TpsDisplay";
 
@@ -55,11 +55,11 @@ function drawCharacter(
   // Anchor: sprite bottom ~8px below y (rope contact), same as before relative to feet
   const by = y - SPRITE_PX + 8;
 
-  if (img && img.complete) {
+  if (img && img.complete && img.naturalWidth > 0) {
     const iw = img.naturalWidth;
     const ih = img.naturalHeight;
     if (frozen) ctx.globalAlpha = 0.6;
-    if (iw > 0 && ih > 0) {
+    if (ih > 0) {
       const side = Math.min(iw, ih);
       const sx = (iw - side) / 2;
       const sy = (ih - side) / 2;
@@ -138,10 +138,13 @@ export default function CanvasGame({
   const animRef = useRef<number>(0);
   const ropeXRef = useRef(0);
   const targetXRef = useRef(0);
+  const gameRef = useRef(game);
+
+  useLayoutEffect(() => {
+    gameRef.current = game;
+  }, [game]);
 
   const isRed = team === TEAMS.RED;
-  const playerTeamStr = isRed ? "red" : "blue";
-  const enemyTeamStr = isRed ? "blue" : "red";
 
   const playerScore = isRed ? game.redScore : game.blueScore;
   const enemyScore = isRed ? game.blueScore : game.redScore;
@@ -156,12 +159,23 @@ export default function CanvasGame({
   const [cooldown, setCooldown] = useState(0);
 
   useEffect(() => {
-    const diffOriginal = game.blueScore - game.redScore;
+    const computeTarget = () => {
+      const g = gameRef.current;
+      const diffOriginal = g.blueScore - g.redScore;
+      const wrap = wrapRef.current;
+      const w = wrap?.clientWidth ?? 0;
+      const maxRopeOffset =
+        w > 0 ? w / 3 : typeof window !== "undefined" ? Math.max(120, window.innerWidth / 3) : 150;
+      const total = g.redScore + g.blueScore || 1;
+      const percentDiff = diffOriginal / total;
+      targetXRef.current = percentDiff * maxRopeOffset;
+    };
+    computeTarget();
     const wrap = wrapRef.current;
-    const maxRopeOffset = wrap ? wrap.clientWidth / 3 : typeof window !== "undefined" ? window.innerWidth / 3 : 150;
-    const total = game.redScore + game.blueScore || 1;
-    const percentDiff = diffOriginal / total;
-    targetXRef.current = percentDiff * maxRopeOffset;
+    if (!wrap || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => computeTarget());
+    ro.observe(wrap);
+    return () => ro.disconnect();
   }, [game.redScore, game.blueScore]);
 
   useEffect(() => {
@@ -195,6 +209,7 @@ export default function CanvasGame({
     window.addEventListener("resize", resize);
 
     function loop() {
+      const g = gameRef.current;
       ropeXRef.current += (targetXRef.current - ropeXRef.current) * ROPE_SMOOTH;
       drawBackground(ctx, w, h);
       const ropeCY = h * 0.52;
@@ -204,8 +219,8 @@ export default function CanvasGame({
       drawRope(ctx, ropeCY, mirror ? -rope : rope, w);
       const redX = mirror ? w * 0.82 - rope * 0.4 : w * 0.18 + rope * 0.4;
       const blueX = mirror ? w * 0.18 - rope * 0.4 : w * 0.82 + rope * 0.4;
-      drawCharacter(ctx, redX, ropeCY - 8, "#ef4444", "RED", game.redSabotaged, "red");
-      drawCharacter(ctx, blueX, ropeCY - 8, "#3b82f6", "BLUE", game.blueSabotaged, "blue");
+      drawCharacter(ctx, redX, ropeCY - 8, "#ef4444", "RED", g.redSabotaged, "red");
+      drawCharacter(ctx, blueX, ropeCY - 8, "#3b82f6", "BLUE", g.blueSabotaged, "blue");
       ctx.globalAlpha = 0.12;
       if (mirror) {
         ctx.fillStyle = "#3b82f6";
@@ -227,7 +242,7 @@ export default function CanvasGame({
       ro.disconnect();
       window.removeEventListener("resize", resize);
     };
-  }, [game.redSabotaged, game.blueSabotaged, isRed]);
+  }, [isRed]);
 
   const handleAbility = useCallback(() => {
     if (cooldown > 0 || playerFrozen) return;
@@ -265,7 +280,7 @@ export default function CanvasGame({
   return (
     <div
       ref={wrapRef}
-      className="game-card-shell mx-auto flex w-full max-w-xl flex-col overflow-hidden rounded-sm border border-dashed border-outline-variant bg-gradient-to-b from-surface-container-high to-surface-container-low"
+      className="game-card-shell mx-auto flex w-full max-w-xl flex-shrink-0 flex-col overflow-hidden rounded-sm border border-dashed border-outline-variant bg-gradient-to-b from-surface-container-high to-surface-container-low"
     >
       {/* HUD */}
       <div className="flex shrink-0 items-stretch gap-2 border-b border-dashed border-outline-variant/80 px-2.5 py-3 sm:gap-3 sm:px-4 sm:py-3.5">
@@ -339,8 +354,8 @@ export default function CanvasGame({
 
       {/* Canvas — bounded height; draw resolution unchanged in CanvasGame logic */}
       <div
-        className="game-canvas-frame relative min-h-0 w-full flex-[1_1_auto] overflow-hidden bg-surface-container-low"
-        style={{ height: "min(42vh, 360px)" }}
+        className="game-canvas-frame relative min-h-[min(42vh,360px)] w-full shrink-0 overflow-hidden bg-surface-container-low"
+        style={{ height: "min(42vh, 360px)", minHeight: "clamp(220px, 42vh, 360px)" }}
       >
         <canvas ref={canvasRef} className="block h-full w-full touch-none" style={{ touchAction: "none" }} />
         {txStatus && (

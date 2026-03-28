@@ -33,12 +33,20 @@ const INTER_CHUNK_JITTER_MS = Math.max(
 );
 
 /**
- * Max blocks to walk backward from `latest` in one API request (avoid 60s timeouts).
+ * Max blocks to walk backward from `latest` in one scan (override per caller via options).
+ * Default lowered so serverless (Vercel ~10–60s) does not 504 on cold RPC scans.
  */
-const MAX_SCAN_BLOCKS = Math.max(
+const DEFAULT_MAX_SCAN_BLOCKS = Math.max(
   1000,
-  parseInt(process.env.COMMUNITY_STATS_MAX_SCAN_BLOCKS ?? "80000", 10) || 80000
+  parseInt(process.env.COMMUNITY_STATS_MAX_SCAN_BLOCKS ?? "12000", 10) || 12000
 );
+
+export type CommunityPullTotalsOptions = {
+  /** Cap how far back from `latest` to scan (smaller = faster, fits Vercel timeouts). */
+  maxScanBlocks?: number;
+  /** Cap eth_call fan-out for `playerCommunity` (top pullers by count if over limit). */
+  maxPlayersResolve?: number;
+};
 
 /** Throttle eth_call batch when resolving player → community. */
 const PLAYER_READ_BATCH = 15;
@@ -154,11 +162,13 @@ async function queryFilterChunkWithBackoff(
  * so API routes can always respond 200.
  *
  * Uses getLogs chunks of ≤100 blocks, inter-chunk throttle + exponential backoff on -32011 / 25 rps.
- * Concurrent callers share one in-flight scan so public RPC is not hammered when cache is cold.
+ * Callers with the same options share one in-flight scan (cold-start stampede).
  */
-let inflightCommunityTotals: Promise<Record<CommunityId, number>> | null = null;
+const inflightByKey = new Map<string, Promise<Record<CommunityId, number>>>();
 
-async function fetchCommunityPullTotalsFromChainUncached(): Promise<Record<CommunityId, number>> {
+async function fetchCommunityPullTotalsFromChainUncached(
+  options?: CommunityPullTotalsOptions
+): Promise<Record<CommunityId, number>> {
   const totals = emptyCommunityTotals();
   const addr = CONTRACT_ADDRESS?.trim();
   if (!addr || addr === ethers.ZeroAddress) return totals;
@@ -172,9 +182,13 @@ async function fetchCommunityPullTotalsFromChainUncached(): Promise<Record<Commu
     let deployBlock = Math.max(0, parseInt(deployRaw, 10) || 0);
     if (deployBlock > latest) deployBlock = 0;
 
-    const windowStart = Math.max(deployBlock, latest > MAX_SCAN_BLOCKS ? latest - MAX_SCAN_BLOCKS : deployBlock);
+    const scanCap = Math.max(
+      500,
+      Math.min(DEFAULT_MAX_SCAN_BLOCKS, options?.maxScanBlocks ?? DEFAULT_MAX_SCAN_BLOCKS)
+    );
+    const windowStart = Math.max(deployBlock, latest > scanCap ? latest - scanCap : deployBlock);
 
-    const pullsByPlayer = new Map<string, number>();
+    let pullsByPlayer = new Map<string, number>();
 
     let chunkIndex = 0;
     for (let start = windowStart; start <= latest; start += GETLOGS_BLOCK_SPAN) {
@@ -191,6 +205,14 @@ async function fetchCommunityPullTotalsFromChainUncached(): Promise<Record<Commu
         if (isZeroAddress(player)) continue;
         pullsByPlayer.set(player, (pullsByPlayer.get(player) ?? 0) + 1);
       }
+    }
+
+    const maxPlayers =
+      options?.maxPlayersResolve ??
+      Math.max(100, parseInt(process.env.COMMUNITY_STATS_MAX_PLAYERS ?? "2500", 10) || 2500);
+    if (pullsByPlayer.size > maxPlayers) {
+      const entries = [...pullsByPlayer.entries()].sort((a, b) => b[1] - a[1]).slice(0, maxPlayers);
+      pullsByPlayer = new Map(entries);
     }
 
     let readI = 0;
@@ -214,12 +236,15 @@ async function fetchCommunityPullTotalsFromChainUncached(): Promise<Record<Commu
   return totals;
 }
 
-export function fetchCommunityPullTotalsFromChain(): Promise<Record<CommunityId, number>> {
-  if (inflightCommunityTotals) return inflightCommunityTotals;
-  inflightCommunityTotals = new Promise<Record<CommunityId, number>>((resolve, reject) => {
-    void fetchCommunityPullTotalsFromChainUncached().then(resolve, reject);
-  }).finally(() => {
-    inflightCommunityTotals = null;
+export function fetchCommunityPullTotalsFromChain(
+  options?: CommunityPullTotalsOptions
+): Promise<Record<CommunityId, number>> {
+  const key = JSON.stringify(options ?? {});
+  const existing = inflightByKey.get(key);
+  if (existing) return existing;
+  const p = fetchCommunityPullTotalsFromChainUncached(options).finally(() => {
+    inflightByKey.delete(key);
   });
-  return inflightCommunityTotals;
+  inflightByKey.set(key, p);
+  return p;
 }
