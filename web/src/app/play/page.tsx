@@ -356,12 +356,20 @@ function GameSession() {
         if (fundResult.rateLimited) {
           // Rate limited AND wallet is empty — this shouldn't happen but handle gracefully
           showStatus('❌ Wallet empty and rate limited. Try again shortly.', 'err', 6000);
+          setBurnerAddress(null);
+          burnerWalletRef.current = null;
           setPhase('nickname');
           return;
         }
 
         if (!fundResult.success && !fundResult.alreadyFunded) {
-          showStatus(`❌ ${fundResult.error || 'Funding failed'}`, 'err', 5000);
+          showStatus(
+            `❌ ${fundResult.error || "Funding failed"} · If you're on production, set FUNDING_PRIVATE_KEY on the host.`,
+            'err',
+            8000,
+          );
+          setBurnerAddress(null);
+          burnerWalletRef.current = null;
           setPhase('nickname');
           return;
         }
@@ -371,6 +379,8 @@ function GameSession() {
         const funded = await waitForBalance(wallet.address, '0.08', 20000);
         if (!funded) {
           showStatus('❌ Balance not confirmed. Try again.', 'err', 5000);
+          setBurnerAddress(null);
+          burnerWalletRef.current = null;
           setPhase('nickname');
           return;
         }
@@ -459,6 +469,9 @@ function GameSession() {
     } catch (e: unknown) {
       const raw = e instanceof Error ? e.message : String(e);
       showStatus(`❌ Connection error: ${raw.slice(0, 60)}`, 'err', 5000);
+      setBurnerAddress(null);
+      burnerWalletRef.current = null;
+      arenaContractRef.current = null;
       setPhase('nickname');
     }
   }, [nickname, selectedChainTeam, selectedCommunity, getProvider, subscribeEvents, pollGameState, pollLogs, refreshBalance, showStatus]);
@@ -673,7 +686,7 @@ function GameSession() {
       {/* ── Main content ── */}
       <div
         className={[
-          'page-shell flex flex-1 flex-col pb-10 pt-14 sm:pt-16',
+          'page-shell flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain pb-10 pt-14 sm:pt-16',
           phase === 'playing' ? 'page-shell--game-wide' : 'page-shell--game',
         ].join(' ')}
       >
@@ -682,7 +695,7 @@ function GameSession() {
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex flex-1 flex-col justify-center gap-8"
+            className="flex flex-col gap-8 py-1 pb-[max(2.5rem,env(safe-area-inset-bottom,0px))] sm:py-4"
           >
             <div className="text-center">
               <p className="mb-2 font-label text-[10px] font-bold uppercase tracking-[0.35em] text-tertiary">
@@ -823,6 +836,21 @@ function GameSession() {
                   </div>
                 )}
               </div>
+
+              {txStatus && (
+                <div
+                  className={`rounded-sm border px-4 py-3 text-center font-label text-sm font-bold ${
+                    txStatus.type === "err"
+                      ? "border-dashed border-error bg-error/15 text-error"
+                      : txStatus.type === "ok"
+                        ? "border-dashed border-tertiary bg-tertiary/10 text-tertiary"
+                        : "border-dashed border-outline-variant bg-surface-container-high text-on-surface-variant"
+                  }`}
+                  role="status"
+                >
+                  {txStatus.msg}
+                </div>
+              )}
 
               <button
                 type="button"
