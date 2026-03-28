@@ -1,14 +1,33 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
 import { CommunityStatsBoard } from "@/components/CommunityStatsBoard";
 import SiteFooter from "@/components/SiteFooter";
 
+const Arena = dynamic(() => import("@/components/Arena"), {
+  ssr: false,
+  loading: () => (
+    <section className="w-full" aria-label="Arena loading">
+      <div className="relative overflow-hidden rounded-sm bg-surface-container p-6 sm:p-10 md:p-12 stitched-border">
+        <div className="mb-8 h-7 w-48 animate-pulse rounded-sm bg-outline-variant/25 md:mb-10" />
+        <div className="relative overflow-hidden rounded-sm border border-outline-variant bg-[#0a0812]">
+          <div className="min-h-[280px] w-full animate-pulse bg-[#1a1428]/80 md:min-h-[360px]" />
+        </div>
+        <p className="mt-4 text-center font-label text-[9px] uppercase tracking-widest text-outline/60">
+          Loading arena…
+        </p>
+      </div>
+    </section>
+  ),
+});
+
 export default function LandingPage() {
   const [appUrl, setAppUrl] = useState("");
+  const [chainScores, setChainScores] = useState<{ red: number; blue: number } | null>(null);
 
   useEffect(() => {
     const timerId = setTimeout(() => {
@@ -16,6 +35,24 @@ export default function LandingPage() {
       setAppUrl(envUrl || window.location.origin);
     }, 0);
     return () => clearTimeout(timerId);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch("/api/game-scores", { cache: "no-store" });
+        const data = (await res.json()) as { ok?: boolean; redScore?: number; blueScore?: number };
+        if (!cancelled && data.ok && typeof data.redScore === "number" && typeof data.blueScore === "number") {
+          setChainScores({ red: data.redScore, blue: data.blueScore });
+        }
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const playUrl = `${appUrl}/play`;
@@ -30,7 +67,7 @@ export default function LandingPage() {
         }}
       />
 
-      <div className="relative z-10 mx-auto flex w-full max-w-[1200px] flex-1 flex-col px-4 pb-16 pt-8 sm:px-6 sm:pt-12">
+      <div className="page-shell page-stack relative z-10 flex flex-1 flex-col page-main-pad">
         {/* Hero */}
         <motion.section
           initial={{ opacity: 0, y: 12 }}
@@ -39,9 +76,6 @@ export default function LandingPage() {
           className="w-full"
         >
           <div className="relative overflow-hidden rounded-sm bg-surface-container-low p-8 sm:p-12 md:p-20 stitched-border">
-            <div className="absolute right-0 top-0 p-3 font-label text-[10px] uppercase tracking-[0.45em] text-tertiary opacity-50 sm:p-4 sm:text-xs">
-              STITCH_ID: TUG-01
-            </div>
             <div className="grid items-center gap-12 md:grid-cols-2 md:gap-16">
               <div>
                 <p className="mb-3 font-label text-[10px] uppercase tracking-[0.35em] text-tertiary sm:text-[11px]">
@@ -121,7 +155,7 @@ export default function LandingPage() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.06 }}
-          className="mx-auto mt-16 w-full max-w-[1440px]"
+          className="w-full"
         >
           <div className="relative overflow-hidden rounded-sm bg-surface-container p-6 sm:p-10 md:p-14 stitched-border">
             <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
@@ -130,8 +164,17 @@ export default function LandingPage() {
                   Real-time arena
                 </h2>
                 <p className="mt-1 font-label text-xs text-on-surface-variant sm:text-sm">
-                  CREW PULLS: <span className="text-tertiary">live</span> | STITCHING STATE:{" "}
-                  <span className="text-secondary">ACTIVE</span>
+                  ON-CHAIN: <span className="text-tertiary">Pulled</span> logs +{" "}
+                  <span className="text-tertiary">getGameInfo</span>
+                  {chainScores != null && (
+                    <>
+                      {" "}
+                      · SCORE{" "}
+                      <span className="text-red-400">{chainScores.red}</span>
+                      {" / "}
+                      <span className="text-blue-400">{chainScores.blue}</span>
+                    </>
+                  )}
                 </p>
               </div>
               <div className="glass-panel flex items-center gap-4 self-start rounded-sm px-4 py-3 md:self-auto">
@@ -153,12 +196,22 @@ export default function LandingPage() {
           </div>
         </motion.section>
 
+        {/* Pitch: decorative canvas crowd (not txs) + real RPC TPS from blocks */}
+        <motion.section
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.08 }}
+          className="w-full"
+        >
+          <Arena />
+        </motion.section>
+
         {/* Feature cards */}
         <motion.section
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.1 }}
-          className="mx-auto mt-20 w-full max-w-[1200px]"
+          className="page-shell--content mx-auto w-full"
         >
           <div className="mb-10 text-center">
             <h2 className="font-headline text-3xl font-bold uppercase italic text-on-surface sm:text-4xl">
@@ -207,7 +260,7 @@ export default function LandingPage() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.14 }}
-          className="mx-auto mt-20 w-full max-w-[1000px]"
+          className="w-full max-w-[1000px] self-center"
         >
           <div className="relative rounded-sm bg-gradient-to-br from-surface-container-high to-surface-container-low p-8 text-center stitched-border-primary sm:p-12">
             <div className="pointer-events-none absolute -left-6 top-1/2 hidden -translate-y-1/2 lg:block">
@@ -242,7 +295,7 @@ export default function LandingPage() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.18 }}
-          className="mx-auto mt-16 flex w-full max-w-3xl flex-col items-center gap-8 rounded-sm bg-surface-container-low px-5 py-8 stitched-border sm:flex-row sm:items-start sm:justify-between sm:gap-10 sm:px-8"
+          className="mx-auto flex w-full max-w-3xl flex-col items-center gap-8 rounded-sm bg-surface-container-low px-5 py-8 stitched-border sm:flex-row sm:items-start sm:justify-between sm:gap-10 sm:px-8"
         >
           <div className="flex flex-col text-center sm:text-left">
             <h2 className="font-label text-[10px] font-bold uppercase tracking-[0.25em] text-outline">

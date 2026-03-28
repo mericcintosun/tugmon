@@ -198,16 +198,26 @@ export default function CanvasGame({
       ropeXRef.current += (targetXRef.current - ropeXRef.current) * ROPE_SMOOTH;
       drawBackground(ctx, w, h);
       const ropeCY = h * 0.52;
-      drawRope(ctx, ropeCY, ropeXRef.current, w);
-      const redX = w * 0.18 + ropeXRef.current * 0.4;
-      const blueX = w * 0.82 + ropeXRef.current * 0.4;
+      /** Mirror when YOU are blue so your sprite aligns with the You column (left). */
+      const mirror = !isRed;
+      const rope = ropeXRef.current;
+      drawRope(ctx, ropeCY, mirror ? -rope : rope, w);
+      const redX = mirror ? w * 0.82 - rope * 0.4 : w * 0.18 + rope * 0.4;
+      const blueX = mirror ? w * 0.18 - rope * 0.4 : w * 0.82 + rope * 0.4;
       drawCharacter(ctx, redX, ropeCY - 8, "#ef4444", "RED", game.redSabotaged, "red");
       drawCharacter(ctx, blueX, ropeCY - 8, "#3b82f6", "BLUE", game.blueSabotaged, "blue");
       ctx.globalAlpha = 0.12;
-      ctx.fillStyle = "#ef4444";
-      ctx.fillRect(0, 0, 44, h);
-      ctx.fillStyle = "#3b82f6";
-      ctx.fillRect(w - 44, 0, 44, h);
+      if (mirror) {
+        ctx.fillStyle = "#3b82f6";
+        ctx.fillRect(0, 0, 44, h);
+        ctx.fillStyle = "#ef4444";
+        ctx.fillRect(w - 44, 0, 44, h);
+      } else {
+        ctx.fillStyle = "#ef4444";
+        ctx.fillRect(0, 0, 44, h);
+        ctx.fillStyle = "#3b82f6";
+        ctx.fillRect(w - 44, 0, 44, h);
+      }
       ctx.globalAlpha = 1;
       animRef.current = requestAnimationFrame(loop);
     }
@@ -217,7 +227,7 @@ export default function CanvasGame({
       ro.disconnect();
       window.removeEventListener("resize", resize);
     };
-  }, [game.redSabotaged, game.blueSabotaged]);
+  }, [game.redSabotaged, game.blueSabotaged, isRed]);
 
   const handleAbility = useCallback(() => {
     if (cooldown > 0 || playerFrozen) return;
@@ -317,7 +327,10 @@ export default function CanvasGame({
       {/* Tug meter */}
       <div className="relative h-2.5 shrink-0 overflow-hidden bg-black/50">
         <div
-          className="absolute inset-y-0 left-0 bg-gradient-to-r from-red-600 via-violet-600 to-blue-600 opacity-90 transition-[width] duration-100"
+          className={[
+            "absolute inset-y-0 left-0 bg-gradient-to-r from-red-600 via-violet-600 to-blue-600 opacity-90 transition-[width] duration-100",
+            !isRed ? "origin-left -scale-x-100" : "",
+          ].join(" ")}
           style={{ width: `${ropePercent}%` }}
         />
         <div className="absolute inset-0 bg-gradient-to-b from-white/[0.08] to-transparent pointer-events-none" />

@@ -313,9 +313,12 @@ export default function TugOfWar() {
         drawBg(ctx, W, H);
       }
       const cy = H * 0.55;
-      drawRope(ctx, cy, ropeXRef.current, W);
-      const rx = W * 0.2 + ropeXRef.current * 0.35;
-      const bx = W * 0.8 + ropeXRef.current * 0.35;
+      /** Mirror arena when YOU are blue so your sprite sits on the same side as the YOU panel (left). */
+      const mirror = playerTeam === "blue";
+      const rope = ropeXRef.current;
+      drawRope(ctx, cy, mirror ? -rope : rope, W);
+      const rx = mirror ? W * 0.8 - rope * 0.35 : W * 0.2 + rope * 0.35;
+      const bx = mirror ? W * 0.2 - rope * 0.35 : W * 0.8 + rope * 0.35;
 
       const redFrozen =
         (enemyFrozenRef.current && playerTeam === "blue") || (playerFrozenRef.current && playerTeam === "red");
@@ -326,10 +329,17 @@ export default function TugOfWar() {
       drawChar(ctx, bx, cy - 4, "#3b82f6", "BLUE", blueFrozen, blueImg);
 
       ctx.globalAlpha = 0.13;
-      ctx.fillStyle = "#ef4444";
-      ctx.fillRect(0, 0, 48, H);
-      ctx.fillStyle = "#3b82f6";
-      ctx.fillRect(W - 48, 0, 48, H);
+      if (mirror) {
+        ctx.fillStyle = "#3b82f6";
+        ctx.fillRect(0, 0, 48, H);
+        ctx.fillStyle = "#ef4444";
+        ctx.fillRect(W - 48, 0, 48, H);
+      } else {
+        ctx.fillStyle = "#ef4444";
+        ctx.fillRect(0, 0, 48, H);
+        ctx.fillStyle = "#3b82f6";
+        ctx.fillRect(W - 48, 0, 48, H);
+      }
       ctx.globalAlpha = 1;
       animRef.current = requestAnimationFrame(loop);
     }
@@ -604,7 +614,10 @@ export default function TugOfWar() {
 
       <div className="relative h-2.5 shrink-0 overflow-hidden bg-[#0d0d15]">
         <div
-          className="absolute inset-0 bg-gradient-to-r from-red-600 via-violet-600 to-blue-600 opacity-85 transition-[width] duration-100"
+          className={[
+            "absolute left-0 top-0 bottom-0 bg-gradient-to-r from-red-600 via-violet-600 to-blue-600 opacity-85 transition-[width] duration-100",
+            playerTeam === "blue" ? "origin-left -scale-x-100" : "",
+          ].join(" ")}
           style={{ width: `${ropeBar}%` }}
         />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/[0.08] to-transparent" />

@@ -20,7 +20,7 @@ export function CommunityStatsBoard({
     void (async () => {
       try {
         const res = await fetch("/api/community-stats", { cache: "no-store" });
-        const data = (await res.json()) as { totals?: Totals };
+        const data = (await res.json()) as { totals?: Totals; source?: string };
         if (!cancelled && data.totals) setTotals(data.totals);
       } catch {
         if (!cancelled) setErr("Could not load stats");
@@ -33,7 +33,7 @@ export function CommunityStatsBoard({
           if (data.totals) setTotals(data.totals);
         })
         .catch(() => {});
-    }, 12000);
+    }, 22000);
     return () => {
       cancelled = true;
       clearInterval(id);
@@ -68,7 +68,8 @@ export function CommunityStatsBoard({
             Social pressure
           </p>
           <p className="mt-1 font-body text-sm text-on-surface-variant">
-            Pull txs attributed to each allegiance (reported from /play).
+            Pull counts from contract <span className="text-tertiary">Pulled</span> logs, grouped by each
+            wallet&apos;s on-chain <span className="text-tertiary">playerCommunity</span> mapping.
           </p>
         </div>
         {showShare && (

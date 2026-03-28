@@ -472,15 +472,6 @@ function GameSession() {
   const roleMeta = ROLE_META[roleId];
   const myTeamSabotaged = team ? (isRed ? game.redSabotaged : game.blueSabotaged) : false;
 
-  const reportCommunityPulls = useCallback((n: number) => {
-    if (!joinedCommunityId || n <= 0) return;
-    void fetch('/api/community-stats', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ communityId: joinedCommunityId, txCount: n }),
-    }).catch(() => {});
-  }, [joinedCommunityId]);
-
   const pumpBurstLock = useRef(false);
 
   const handlePump = useCallback(() => {
@@ -517,12 +508,10 @@ function GameSession() {
       try {
         const contractAny = c as ethers.Contract & { pullMany: (n: number) => Promise<ethers.ContractTransactionResponse> };
         await contractAny.pullMany(burst).then((tx) => tx.wait(1));
-        reportCommunityPulls(burst);
       } catch (e) {
         console.error(e);
         try {
           for (let i = 0; i < burst; i++) await c.pull();
-          reportCommunityPulls(burst);
         } catch (e2) {
           console.error(e2);
         }
@@ -542,7 +531,6 @@ function GameSession() {
     roleId,
     roleMeta,
     nftHoldVerified,
-    reportCommunityPulls,
   ]);
 
   // ── Special actions ─────────────────────────────────────────────────────────
@@ -621,7 +609,7 @@ function GameSession() {
     >
       {/* ── Wallet badge ── */}
       {burnerAddress && (
-        <div className="absolute right-3 top-3 z-50 sm:right-6 sm:top-4">
+        <div className="absolute right-[max(0.75rem,var(--layout-gutter))] top-3 z-50 sm:top-4">
           <div className="glass-panel rounded-full border border-dashed border-outline-variant px-3 py-1.5 font-mono text-[10px] text-on-surface-variant shadow-patch">
             <span className="text-on-surface">{balance}</span>{" "}
             <span className="text-outline">MON</span>
@@ -680,8 +668,8 @@ function GameSession() {
       {/* ── Main content ── */}
       <div
         className={[
-          'mx-auto flex w-full max-w-lg flex-1 flex-col px-4 pb-10 pt-14 sm:px-6',
-          phase === 'playing' ? 'max-w-2xl' : '',
+          'page-shell flex flex-1 flex-col pb-10 pt-14 sm:pt-16',
+          phase === 'playing' ? 'page-shell--game-wide' : 'page-shell--game',
         ].join(' ')}
       >
         {/* ── NICKNAME PHASE ── */}
@@ -737,7 +725,7 @@ function GameSession() {
                   >
                     <span className="block text-2xl font-black tracking-tight text-red-400">RED</span>
                     <span className="mt-1 block font-body text-[11px] font-medium text-on-surface-variant">
-                      Halat — kırmızı taraf
+                      Rope — red side
                     </span>
                   </button>
                   <button
@@ -752,7 +740,7 @@ function GameSession() {
                   >
                     <span className="block text-2xl font-black tracking-tight text-blue-400">BLUE</span>
                     <span className="mt-1 block font-body text-[11px] font-medium text-on-surface-variant">
-                      Halat — mavi taraf
+                      Rope — blue side
                     </span>
                   </button>
                 </div>

@@ -1,30 +1,43 @@
 import { NextResponse } from "next/server";
-import { incrementCommunityTx, getCommunityTotals } from "@/lib/communityStatsStore";
-import { isCommunityId } from "@/utils/gmonadCommunities";
+import {
+  emptyCommunityTotals,
+  fetchCommunityPullTotalsFromChain,
+} from "@/lib/chainCommunityPulls";
+import { CONTRACT_ADDRESS } from "@/utils/constants";
+import type { CommunityId } from "@/utils/gmonadCommunities";
+import { ethers } from "ethers";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
+
+/** In-process cache to avoid hammering RPC (serverless instances each have their own cache). */
+let memoryCache: { totals: Record<CommunityId, number>; storedAt: number } | null = null;
+const CACHE_MS = 28_000;
 
 export async function GET() {
-  try {
-    const totals = await getCommunityTotals();
-    return NextResponse.json({ totals, updatedAt: Date.now() });
-  } catch (e) {
-    return NextResponse.json({ error: String(e).slice(0, 120) }, { status: 500 });
+  const addr = CONTRACT_ADDRESS?.trim();
+  if (!addr || addr === ethers.ZeroAddress) {
+    return NextResponse.json({
+      totals: emptyCommunityTotals(),
+      updatedAt: Date.now(),
+      source: "none" as const,
+    });
   }
-}
 
-export async function POST(req: Request) {
-  try {
-    const body = (await req.json()) as { communityId?: string; txCount?: number };
-    const id = body.communityId;
-    const n = Math.min(64, Math.max(1, Number(body.txCount) || 1));
-    if (!id || !isCommunityId(id)) {
-      return NextResponse.json({ ok: false, error: "bad communityId" }, { status: 400 });
-    }
-    await incrementCommunityTx(id, n);
-    const totals = await getCommunityTotals();
-    return NextResponse.json({ ok: true, totals });
-  } catch (e) {
-    return NextResponse.json({ ok: false, error: String(e).slice(0, 120) }, { status: 500 });
+  if (memoryCache && Date.now() - memoryCache.storedAt < CACHE_MS) {
+    return NextResponse.json({
+      totals: memoryCache.totals,
+      updatedAt: Date.now(),
+      source: "cached" as const,
+    });
   }
+
+  const totals = await fetchCommunityPullTotalsFromChain();
+  memoryCache = { totals, storedAt: Date.now() };
+
+  return NextResponse.json({
+    totals,
+    updatedAt: Date.now(),
+    source: "chain" as const,
+  });
 }

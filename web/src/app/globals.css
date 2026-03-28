@@ -83,6 +83,96 @@
   --red-glow: rgba(239, 68, 68, 0.45);
   --blue-glow: rgba(59, 130, 246, 0.45);
   --gold-glow: rgba(234, 179, 8, 0.5);
+
+  /* Layout tokens (nav, .page-shell, section rhythm) */
+  --layout-max: 90rem;
+  --layout-content: 75rem;
+  --layout-gutter: 1rem;
+  --layout-gutter-sm: 1.5rem;
+  --layout-gutter-md: 2rem;
+  --layout-nav-min-h: 5rem;
+  --layout-section-y: 2rem;
+  --layout-section-y-md: 2.5rem;
+  --layout-block-gap: 3rem;
+  --layout-block-gap-lg: 4rem;
+}
+
+@media (min-width: 640px) {
+  :root {
+    --layout-section-y: 2.5rem;
+    --layout-section-y-md: 3rem;
+    --layout-block-gap: 3.5rem;
+    --layout-block-gap-lg: 5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --layout-block-gap-lg: 5rem;
+  }
+}
+
+/* ── Page layout primitives (use across AppNav, pages, footer) ───────────── */
+.page-shell {
+  width: 100%;
+  max-width: var(--layout-max);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--layout-gutter);
+  padding-right: var(--layout-gutter);
+}
+
+@media (min-width: 640px) {
+  .page-shell {
+    padding-left: var(--layout-gutter-sm);
+    padding-right: var(--layout-gutter-sm);
+  }
+}
+
+@media (min-width: 768px) {
+  .page-shell {
+    padding-left: var(--layout-gutter-md);
+    padding-right: var(--layout-gutter-md);
+  }
+}
+
+/** Marketing / readable column — nested inside full-width backgrounds */
+.page-shell--content {
+  max-width: var(--layout-content);
+}
+
+/** Vertical padding for default scroll pages (below sticky nav) */
+.page-main-pad {
+  padding-top: var(--layout-section-y);
+  padding-bottom: var(--layout-block-gap-lg);
+}
+
+@media (min-width: 640px) {
+  .page-main-pad {
+    padding-top: var(--layout-section-y-md);
+  }
+}
+
+/** Stack major sections with consistent rhythm */
+.page-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-block-gap-lg);
+}
+
+@media (max-width: 639px) {
+  .page-stack {
+    gap: var(--layout-block-gap);
+  }
+}
+
+/** Play / focused flows: narrow column, still same horizontal gutter */
+.page-shell--game {
+  max-width: 32rem; /* max-w-lg */
+}
+
+.page-shell--game-wide {
+  max-width: 42rem; /* max-w-2xl */
 }
 
 html,

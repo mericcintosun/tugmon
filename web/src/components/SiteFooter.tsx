@@ -3,7 +3,7 @@ import Link from "next/link";
 export default function SiteFooter() {
   return (
     <footer className="mt-auto w-full rounded-t-sm border-t-2 border-dashed border-outline-variant bg-surface-container-low">
-      <div className="mx-auto flex max-w-[1440px] flex-col items-center gap-6 p-8 md:flex-row md:justify-between md:gap-8">
+      <div className="flex w-full flex-col items-center gap-6 py-10 md:flex-row md:justify-between md:gap-8">
         <div className="font-label text-lg font-bold uppercase text-primary">
           Tugmon Atelier
         </div>

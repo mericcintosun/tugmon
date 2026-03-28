@@ -264,7 +264,7 @@ export default function TugmonDashboard() {
   // ─────────────────────────────────────────────────────────
 
   if (loading) return (
-    <div className="flex min-h-[50vh] flex-1 items-center justify-center bg-background">
+    <div className="page-shell flex min-h-[min(50vh,28rem)] flex-1 items-center justify-center bg-background py-12">
       <div className="space-y-6 text-center">
         <div className="mx-auto h-16 w-16 animate-spin rounded-full border-4 border-t-primary border-r-transparent border-b-secondary border-l-transparent" />
         <div className="animate-pulse font-headline text-3xl font-black italic tracking-tighter text-on-surface">
@@ -305,7 +305,7 @@ export default function TugmonDashboard() {
         )}
       </AnimatePresence>
 
-      <div className="relative z-10 mx-auto flex min-h-0 w-full max-w-[1440px] flex-1 flex-col gap-8 overflow-auto px-4 py-8 sm:gap-10 sm:px-6 sm:py-10 md:px-8">
+      <div className="page-shell relative z-10 flex min-h-0 flex-1 flex-col gap-8 overflow-auto py-8 sm:gap-10 sm:py-10">
         {/* ── Hero strip (matches landing “Real-time arena” header) ── */}
         <section className="relative overflow-hidden rounded-sm bg-surface-container-low p-6 sm:p-8 md:p-10 stitched-border">
           <div className="absolute right-0 top-0 p-2 font-label text-[9px] uppercase tracking-[0.45em] text-tertiary opacity-50 sm:p-3 sm:text-[10px]">

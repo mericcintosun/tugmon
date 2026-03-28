@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "deploy:vercel": "bash ../scripts/deploy-vercel.sh"
   },
   "dependencies": {
     "@upstash/redis": "^1.35.8",
