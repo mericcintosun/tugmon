@@ -1,0 +1,142 @@
+@import "tailwindcss";
+@plugin "daisyui";
+
+/* ── Design tokens ─────────────────────────────────────────────────────────── */
+:root {
+  --font-orbitron: var(--font-orbitron);
+  --red-glow:    rgba(239, 68, 68, 0.45);
+  --blue-glow:   rgba(59, 130, 246, 0.45);
+  --gold-glow:   rgba(234, 179, 8, 0.50);
+}
+
+html, body {
+  background: #040408;
+  color: #fff;
+  font-family: var(--font-geist-sans), -apple-system, sans-serif;
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── Orbitron utility ──────────────────────────────────────────────────────── */
+.font-orbitron { font-family: var(--font-orbitron), monospace; }
+
+/* ── Pump button rings ─────────────────────────────────────────────────────── */
+@keyframes ring-expand {
+  0%   { transform: scale(1);    opacity: 0.5; }
+  100% { transform: scale(1.7);  opacity: 0; }
+}
+.ring-expand {
+  animation: ring-expand 1.8s ease-out infinite;
+}
+.ring-expand-delay {
+  animation: ring-expand 1.8s ease-out 0.6s infinite;
+}
+.ring-expand-delay2 {
+  animation: ring-expand 1.8s ease-out 1.2s infinite;
+}
+
+/* ── Float up particle ─────────────────────────────────────────────────────── */
+@keyframes floatUp {
+  0%   { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-110px) scale(1.6); }
+}
+
+/* ── Sabotage screen flash ────────────────────────────────────────────────── */
+@keyframes sabFlash {
+  0%,100% { opacity: 0; }
+  20%, 80% { opacity: 1; }
+}
+.anim-sab-flash { animation: sabFlash 0.8s ease-in-out; }
+
+/* ── Boost shimmer ─────────────────────────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200%  center; }
+}
+.shimmer-gold {
+  background: linear-gradient(90deg, #ca8a04 0%, #fde047 40%, #ca8a04 60%, #fbbf24 100%);
+  background-size: 200% auto;
+  animation: shimmer 1.2s linear infinite;
+}
+.shimmer-red {
+  background: linear-gradient(90deg, #dc2626 0%, #f87171 40%, #dc2626 60%, #ef4444 100%);
+  background-size: 200% auto;
+  animation: shimmer 1.2s linear infinite;
+}
+.shimmer-blue {
+  background: linear-gradient(90deg, #1d4ed8 0%, #60a5fa 40%, #1d4ed8 60%, #3b82f6 100%);
+  background-size: 200% auto;
+  animation: shimmer 1.2s linear infinite;
+}
+
+/* ── Screen-wide flash overlays ────────────────────────────────────────────── */
+@keyframes flashRed {
+  0%, 100% { opacity: 0; }
+  30%, 70%  { opacity: 1; }
+}
+@keyframes flashYellow {
+  0%, 100% { opacity: 0; }
+  30%, 70%  { opacity: 1; }
+}
+.flash-red    { animation: flashRed    0.7s ease-out forwards; }
+.flash-yellow { animation: flashYellow 0.7s ease-out forwards; }
+
+/* ── Shake animation ───────────────────────────────────────────────────────── */
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20%      { transform: translateX(-8px); }
+  40%      { transform: translateX(8px); }
+  60%      { transform: translateX(-5px); }
+  80%      { transform: translateX(5px); }
+}
+.animate-shake { animation: shake 0.5s ease-out; }
+
+/* ── Glitch ─────────────────────────────────────────────────────────────────  */
+@keyframes glitch {
+  0%,100% { transform: translate(0); }
+  20%     { transform: translate(-4px, 1px); }
+  40%     { transform: translate(4px, -1px); }
+  60%     { transform: translate(-2px, 2px); }
+  80%     { transform: translate(2px, -2px); }
+}
+.animate-glitch { animation: glitch 0.35s steps(2) infinite; }
+
+/* ── Tug bar center knot pulse ─────────────────────────────────────────────── */
+@keyframes knot-glow {
+  0%, 100% { box-shadow: 0 0 8px 2px white; }
+  50%       { box-shadow: 0 0 20px 6px white; }
+}
+.knot-glow { animation: knot-glow 1.5s ease-in-out infinite; }
+
+/* ── Number tick (TPS counter) ────────────────────────────────────────────── */
+@keyframes numberTick {
+  from { opacity: 0.3; transform: translateY(4px); }
+  to   { opacity: 1;   transform: translateY(0); }
+}
+.number-tick { animation: numberTick 0.15s ease-out; }
+
+/* ── Cooldown circular progress ───────────────────────────────────────────── */
+.cooldown-circle { transition: stroke-dashoffset 1s linear; }
+
+/* ── Pulse slow ───────────────────────────────────────────────────────────── */
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
+}
+.animate-pulse-slow { animation: pulse-slow 3s infinite ease-in-out; }
+
+/* ── Scanline overlay (dashboard) ─────────────────────────────────────────── */
+.scanlines::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.04) 2px,
+    rgba(0,0,0,0.04) 4px
+  );
+  pointer-events: none;
+  z-index: 999;
+}
