@@ -116,6 +116,9 @@ interface CanvasGameProps {
   onSabotage: () => void;
   onBoost: () => void;
   txStatus: { msg: string; type: "pending" | "ok" | "err" } | null;
+  /** Gmonad War: allegiance + power hints */
+  allegianceLine?: string | null;
+  powerLine?: string | null;
 }
 
 export default function CanvasGame({
@@ -127,6 +130,8 @@ export default function CanvasGame({
   onSabotage,
   onBoost,
   txStatus,
+  allegianceLine,
+  powerLine,
 }: CanvasGameProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -295,6 +300,19 @@ export default function CanvasGame({
           )}
         </div>
       </div>
+
+      {(allegianceLine || powerLine) && (
+        <div className="shrink-0 border-b border-white/[0.05] bg-violet-950/20 px-3 py-2 text-center sm:px-4">
+          {allegianceLine && (
+            <p className="text-[11px] font-medium leading-snug text-violet-100/88">{allegianceLine}</p>
+          )}
+          {powerLine && (
+            <p className="font-orbitron mt-1 text-[9px] font-bold uppercase tracking-[0.2em] text-amber-200/80">
+              {powerLine}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Tug meter */}
       <div className="relative h-2.5 shrink-0 overflow-hidden bg-black/50">

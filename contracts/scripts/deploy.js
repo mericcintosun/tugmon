@@ -12,6 +12,13 @@ async function main() {
   const address = await arena.getAddress();
   console.log(`✅ TugmonArena deployed to: ${address}`);
 
+  const net = hre.network.name;
+  if (net === "hardhat") {
+    console.log("ℹ️  hardhat ağı: .env.local güncellenmedi (geçici adres). Testnet için:");
+    console.log("   npx hardhat run scripts/deploy.js --network monadTestnet");
+    return;
+  }
+
   const envPath = path.join(__dirname, "../../web/.env.local");
   if (fs.existsSync(envPath)) {
     let envData = fs.readFileSync(envPath, "utf8");
@@ -20,9 +27,9 @@ async function main() {
       `NEXT_PUBLIC_CONTRACT_ADDRESS=${address}`
     );
     fs.writeFileSync(envPath, envData);
-    console.log(`✅ Guncellendi: ${envPath}`);
+    console.log(`✅ Güncellendi: ${envPath}`);
   } else {
-    console.log(`👉 web/.env.local bulunamadi, adresi manuel ekleyin.`);
+    console.log(`👉 web/.env.local bulunamadı — NEXT_PUBLIC_CONTRACT_ADDRESS=${address} ekleyin.`);
   }
 }
 

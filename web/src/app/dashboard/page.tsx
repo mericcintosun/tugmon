@@ -5,6 +5,7 @@ import { ethers } from 'ethers';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
 import TpsDisplay from '@/components/TpsDisplay';
+import { CommunityStatsBoard } from '@/components/CommunityStatsBoard';
 import { CONTRACT_ADDRESS, CONTRACT_ABI, ROLE_META, type RoleId } from '@/utils/constants';
 
 const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || 'https://testnet-rpc.monad.xyz';
@@ -131,8 +132,9 @@ export default function TugmonDashboard() {
               if (parsed.name === 'PlayerJoined') {
                 const addr  = parsed.args[0] as string;
                 const tTeam = Number(parsed.args[1]);
-                const role  = Number(parsed.args[2]) as RoleId;
-                const nick  = parsed.args[3] as string;
+                const _communityId = Number(parsed.args[2]);
+                const role  = Number(parsed.args[3]) as RoleId;
+                const nick  = parsed.args[4] as string;
                 const curr  = nextPlayers.get(addr) ?? { address: addr, nickname: '', team: 0, roleId: 0 as RoleId, pulls: 0, specials: 0 };
                 nextPlayers.set(addr, { ...curr, nickname: nick, team: tTeam, roleId: role });
 
@@ -448,6 +450,11 @@ export default function TugmonDashboard() {
             <span className="ml-4 text-white/60 font-black text-sm">{Math.round(redPct)}%</span>
             <span className="ml-auto mr-4 text-white/60 font-black text-sm">{Math.round(bluePct)}%</span>
           </div>
+        </div>
+
+        {/* ── GMONAD COMMUNITY TX LEADERBOARD ── */}
+        <div className="rounded-2xl border border-violet-500/20 bg-[#080810]/90 p-5 shadow-[0_0_40px_rgba(139,92,246,0.08)]">
+          <CommunityStatsBoard variant="full" showShare />
         </div>
 
         {/* ── BOTTOM GRID ── */}

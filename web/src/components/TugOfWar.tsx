@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { GMONAD_COMMUNITIES, type CommunityId } from "@/utils/gmonadCommunities";
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 const ROUND_DURATION = 60;
@@ -225,15 +226,14 @@ export default function TugOfWar() {
   const targetXRef = useRef(0);
   const pullsRef = useRef<number[]>([]);
 
-  // Deterministic SSR + first client paint — randomize only after mount (avoids hydration mismatch)
   const [playerTeam, setPlayerTeam] = useState<Team>("red");
   const [playerRole, setPlayerRole] = useState<RoleDef>(ROLES[0]!);
   const enemyTeam: Team = playerTeam === "red" ? "blue" : "red";
 
-  useEffect(() => {
-    setPlayerTeam(Math.random() < 0.5 ? "red" : "blue");
-    setPlayerRole(pickRole());
-  }, []);
+  /** Match /play: explicit rope side + crew (no random team). */
+  const [setupComplete, setSetupComplete] = useState(false);
+  const [pickRope, setPickRope] = useState<Team | null>(null);
+  const [pickCrew, setPickCrew] = useState<CommunityId | null>(null);
 
   const [scores, setScores] = useState({ red: 0, blue: 0 });
   const [timer, setTimer] = useState(ROUND_DURATION);
@@ -465,6 +465,80 @@ export default function TugOfWar() {
   const total = scores.red + scores.blue || 1;
   const ropeBar = Math.max(2, Math.min(98, 50 + ((scores.blue - scores.red) / total) * 50));
   const timerCrit = timer <= 10 && phase === "playing";
+
+  if (!setupComplete) {
+    const crewMeta = pickCrew ? GMONAD_COMMUNITIES.find((c) => c.id === pickCrew) : null;
+    return (
+      <div className="flex min-h-0 flex-1 flex-col overflow-auto bg-[#080810] px-4 py-8 text-white">
+        <div className="mx-auto w-full max-w-lg space-y-6">
+          <div className="text-center">
+            <p className="font-mono text-[10px] uppercase tracking-[0.35em] text-violet-300/80">Offline · Gmonad War</p>
+            <h1 className="mt-2 text-2xl font-bold tracking-tight">Pick rope & crew</h1>
+            <p className="mt-2 text-sm text-white/45">Same flow as live play — no chain, local scores only.</p>
+          </div>
+          <div>
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-white/35">Rope side</p>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setPickRope("red")}
+                className={`rounded-2xl border-2 py-4 text-lg font-black ${
+                  pickRope === "red" ? "border-red-400 bg-red-950/50" : "border-white/10 bg-white/[0.03]"
+                }`}
+              >
+                RED
+              </button>
+              <button
+                type="button"
+                onClick={() => setPickRope("blue")}
+                className={`rounded-2xl border-2 py-4 text-lg font-black ${
+                  pickRope === "blue" ? "border-blue-400 bg-blue-950/50" : "border-white/10 bg-white/[0.03]"
+                }`}
+              >
+                BLUE
+              </button>
+            </div>
+          </div>
+          <div>
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-white/35">Crew</p>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {GMONAD_COMMUNITIES.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => setPickCrew(c.id)}
+                  className={`rounded-xl border px-3 py-2.5 text-left text-sm ${
+                    pickCrew === c.id ? "border-violet-400 bg-violet-950/40" : "border-white/10 bg-white/[0.03]"
+                  }`}
+                >
+                  <span className="mr-2">{c.emoji}</span>
+                  {c.name}
+                </button>
+              ))}
+            </div>
+          </div>
+          <button
+            type="button"
+            disabled={!pickRope || !pickCrew}
+            onClick={() => {
+              if (!pickRope || !pickCrew) return;
+              setPlayerTeam(pickRope);
+              setPlayerRole(pickRole());
+              setSetupComplete(true);
+            }}
+            className="w-full rounded-xl bg-white py-3.5 text-sm font-semibold text-[#040408] disabled:opacity-40"
+          >
+            Start match
+          </button>
+          {crewMeta && pickRope && (
+            <p className="text-center text-[11px] text-white/35">
+              Playing as {crewMeta.name} on {pickRope.toUpperCase()} — offline mock
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

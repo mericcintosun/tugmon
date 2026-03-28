@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { throttle } from 'lodash';
 import { ethers } from 'ethers';
 
 import {
@@ -14,6 +13,23 @@ import {
   type RoleId,
   CONTRACT_ADDRESS as ENV_CONTRACT_ADDRESS,
 } from '@/utils/constants';
+import {
+  GMONAD_COMMUNITIES,
+  COMMUNITY_ON_CHAIN_ID,
+  communityIdFromOnChain,
+  getCommunity,
+  isCommunityId,
+  type CommunityId,
+} from '@/utils/gmonadCommunities';
+import { getRaidMultiplierForTeam, getRaidBoostedTeam, formatRaidHint } from '@/utils/raidSchedule';
+import { computePullBurstCount, getNftStrengthMultiplier } from '@/utils/pullBurst';
+import { hasCommunityNftWithProvider } from '@/lib/nftPowerUp';
+import {
+  connectBrowserWallet,
+  disconnectStoredMainWallet,
+  getEthereum,
+  getStoredMainWallet,
+} from '@/lib/mainWallet';
 import CanvasGame from '@/components/CanvasGame';
 import {
   getOrCreateBurnerWallet,
@@ -76,6 +92,16 @@ function GameSession() {
     return '';
   });
   const [team, setTeam] = useState<TeamId | null>(null);
+  /** Explicit rope side — must match join() uint8 (fixes wrong-team bugs). */
+  const [selectedChainTeam, setSelectedChainTeam] = useState<TeamId | null>(null);
+  /** Crew / stats / NFT collection (independent of RED vs BLUE). */
+  const [selectedCommunity, setSelectedCommunity] = useState<CommunityId | null>(null);
+  /** Persisted while in-match for Gmonad HUD + stats. */
+  const [joinedCommunityId, setJoinedCommunityId] = useState<CommunityId | null>(null);
+  const [mainWallet, setMainWallet] = useState<string | null>(null);
+  const [nftHoldVerified, setNftHoldVerified] = useState(false);
+  const [raidNow, setRaidNow] = useState(0);
+  const [checkingNft, setCheckingNft] = useState(false);
   const [roleId, setRoleId] = useState<RoleId>(0);
 
   const [game, setGame] = useState<GameState>({
@@ -233,9 +259,45 @@ function GameSession() {
     };
   }, []);
 
+  // ── Main wallet (optional NFT buff) ────────────────────────────────────────
+
+  useEffect(() => {
+    setMainWallet(getStoredMainWallet());
+  }, []);
+
+  useEffect(() => {
+    const id = setInterval(() => setRaidNow(n => n + 1), 8000);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    if (phase !== 'playing' || !joinedCommunityId || !mainWallet) {
+      setNftHoldVerified(false);
+      return;
+    }
+    const eth = getEthereum();
+    if (!eth) return;
+    let cancelled = false;
+    setCheckingNft(true);
+    void (async () => {
+      const ok = await hasCommunityNftWithProvider(mainWallet, joinedCommunityId, eth);
+      if (!cancelled) {
+        setNftHoldVerified(ok);
+        setCheckingNft(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [phase, joinedCommunityId, mainWallet]);
+
   // ── handleNext: create wallet, fund, auto-join ──────────────────────────────
 
   const handleNext = useCallback(async () => {
+    if (!selectedChainTeam || !selectedCommunity) {
+      showStatus('Pick RED or BLUE, then your crew', 'err', 2500);
+      return;
+    }
     const nick = nickname.trim() || 'anon' + Math.floor(Math.random() * 9999);
     setNickname(nick);
     localStorage.setItem('tugmon_nickname', nick);
@@ -261,6 +323,7 @@ function GameSession() {
       const pInfo = await readContract.getPlayerInfo(wallet.address);
       const storedTeam = Number(pInfo[0]);
       const storedRole = Number(pInfo[1]);
+      const storedCommunityOnChain = Number(pInfo[2]);
 
       const gInfo = await readContract.getGameInfo();
       const nowSec = BigInt(Math.floor(Date.now() / 1000));
@@ -309,10 +372,19 @@ function GameSession() {
       }
 
       if (storedTeam !== 0) {
-        // Already joined — resume with funded wallet
+        // Already joined — trust on-chain team + community (not stale localStorage)
         const t = storedTeam as TeamId;
         setTeam(t);
         setRoleId(storedRole as RoleId);
+        const fromChain = communityIdFromOnChain(storedCommunityOnChain);
+        if (fromChain) {
+          setJoinedCommunityId(fromChain);
+          localStorage.setItem('tugmon_community', fromChain);
+          localStorage.setItem('tugmon_chain_team', String(t));
+        } else {
+          const savedC = typeof window !== 'undefined' ? localStorage.getItem('tugmon_community') : null;
+          if (savedC && isCommunityId(savedC)) setJoinedCommunityId(savedC);
+        }
         subscribeEvents(new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider), t);
         pollRef.current = setInterval(async () => {
           await Promise.all([pollGameState(), pollEventsRef.current ? pollLogs(pollEventsRef.current) : Promise.resolve()]);
@@ -322,24 +394,24 @@ function GameSession() {
         return;
       }
 
-      // 3. Determine team by score balance (join less-populated team)
-      const rScore = Number(gInfo[0]);
-      const bScore = Number(gInfo[1]);
-      const assignedTeam: TeamId =
-        rScore > bScore ? 2 // blue team needs more players
-        : bScore > rScore ? 1 // red team needs more players
-        : Math.random() < 0.5 ? 1 : 2; // tie → random
+      const comm = getCommunity(selectedCommunity);
+      if (!comm) {
+        showStatus('Invalid crew', 'err', 2500);
+        setPhase('nickname');
+        return;
+      }
+      const communityOnChain = COMMUNITY_ON_CHAIN_ID[selectedCommunity];
+      const assignedTeam = selectedChainTeam;
 
-      // 6. Join the arena
+      // 6. Join the arena — team and community are independent on-chain
       setPhase('joining');
       showStatus('Joining arena…', 'pending');
 
       try {
-        const tx = await contract.join(assignedTeam, nick);
+        const tx = await contract.join(assignedTeam, communityOnChain, nick);
         await tx.wait(1);
       } catch (e: unknown) {
         const raw = e instanceof Error ? e.message : String(e);
-        // If "already joined" revert, just continue
         if (!raw.includes('already') && !raw.includes('AlreadyJoined')) {
           showStatus(`❌ ${raw.slice(0, 60)}`, 'err', 5000);
           setPhase('nickname');
@@ -347,16 +419,31 @@ function GameSession() {
         }
       }
 
-      // 7. Read role assigned by contract
       const pInfo2 = await readContract.getPlayerInfo(wallet.address);
+      const onChainTeam = Number(pInfo2[0]) as TeamId;
       const finalRole = Number(pInfo2[1]) as RoleId;
+      const onChainCommunity = Number(pInfo2[2]);
 
-      setTeam(assignedTeam);
+      if (onChainTeam !== assignedTeam) {
+        showStatus('❌ On-chain team mismatch — wrong contract ABI?', 'err', 6000);
+        setPhase('nickname');
+        return;
+      }
+      if (onChainCommunity !== communityOnChain) {
+        showStatus('❌ Community id mismatch on-chain', 'err', 6000);
+        setPhase('nickname');
+        return;
+      }
+
+      setTeam(onChainTeam);
       setRoleId(finalRole);
+      setJoinedCommunityId(selectedCommunity);
+      localStorage.setItem('tugmon_community', selectedCommunity);
+      localStorage.setItem('tugmon_chain_team', String(onChainTeam));
       showStatus('✅ You are in!', 'ok', 1500);
 
       // 8. Start event subscription + polling
-      subscribeEvents(new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider), assignedTeam);
+      subscribeEvents(new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider), onChainTeam);
       pollRef.current = setInterval(async () => {
         await Promise.all([pollGameState(), pollEventsRef.current ? pollLogs(pollEventsRef.current) : Promise.resolve()]);
       }, POLL_INTERVAL_MS);
@@ -369,7 +456,7 @@ function GameSession() {
       showStatus(`❌ Connection error: ${raw.slice(0, 60)}`, 'err', 5000);
       setPhase('nickname');
     }
-  }, [nickname, getProvider, subscribeEvents, pollGameState, pollLogs, refreshBalance, showStatus]);
+  }, [nickname, selectedChainTeam, selectedCommunity, getProvider, subscribeEvents, pollGameState, pollLogs, refreshBalance, showStatus]);
 
   // ── Balance refresh while playing ──────────────────────────────────────────
 
@@ -385,21 +472,33 @@ function GameSession() {
   const roleMeta = ROLE_META[roleId];
   const myTeamSabotaged = team ? (isRed ? game.redSabotaged : game.blueSabotaged) : false;
 
-  const throttledPull = useRef(
-    throttle((contract: ethers.Contract) => {
-      contract.pull().catch(console.error);
-    }, 450, { trailing: true })
-  ).current;
+  const reportCommunityPulls = useCallback((n: number) => {
+    if (!joinedCommunityId || n <= 0) return;
+    void fetch('/api/community-stats', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ communityId: joinedCommunityId, txCount: n }),
+    }).catch(() => {});
+  }, [joinedCommunityId]);
+
+  const pumpBurstLock = useRef(false);
 
   const handlePump = useCallback(() => {
-    if (pumpCd || myTeamSabotaged || !arenaContractRef.current) return;
+    if (pumpBurstLock.current || pumpCd || myTeamSabotaged || !arenaContractRef.current || !team) return;
+
+    const nftMult = getNftStrengthMultiplier(nftHoldVerified);
+    const raidMult = getRaidMultiplierForTeam(team);
+    const burst = computePullBurstCount(nftMult, raidMult);
+
+    pumpBurstLock.current = true;
     setPumpCd(true);
 
     const cx = window.innerWidth / 2;
     const cy = Math.min(window.innerHeight * 0.68, window.innerHeight - 100);
     const engineerBonus = roleId === ROLE_ID.ENGINEER;
     const isBoostActive = isRed ? game.redBoosted : game.blueBoosted;
-    const label = isBoostActive ? '⚡+2' : engineerBonus ? '+2' : '+1';
+    const baseLabel = isBoostActive ? '⚡+2' : engineerBonus ? '+2' : '+1';
+    const label = burst > 1 ? `${baseLabel} ×${burst}` : baseLabel;
 
     const newParticles: Particle[] = Array.from({ length: 7 }, (_, i) => ({
       id: Date.now() + i,
@@ -411,11 +510,40 @@ function GameSession() {
 
     setParticles(p => [...p, ...newParticles]);
     setTimeout(() => setParticles(p => p.filter(x => !newParticles.find(n => n.id === x.id))), 900);
-    if (navigator.vibrate) navigator.vibrate(50);
+    if (navigator.vibrate) navigator.vibrate(burst > 1 ? [40, 30, 40] : 50);
 
-    throttledPull(arenaContractRef.current);
-    setTimeout(() => setPumpCd(false), 450);
-  }, [pumpCd, isRed, myTeamSabotaged, game.redBoosted, game.blueBoosted, roleId, roleMeta, throttledPull]);
+    const c = arenaContractRef.current;
+    void (async () => {
+      try {
+        const contractAny = c as ethers.Contract & { pullMany: (n: number) => Promise<ethers.ContractTransactionResponse> };
+        await contractAny.pullMany(burst).then((tx) => tx.wait(1));
+        reportCommunityPulls(burst);
+      } catch (e) {
+        console.error(e);
+        try {
+          for (let i = 0; i < burst; i++) await c.pull();
+          reportCommunityPulls(burst);
+        } catch (e2) {
+          console.error(e2);
+        }
+      } finally {
+        pumpBurstLock.current = false;
+      }
+    })();
+
+    setTimeout(() => setPumpCd(false), Math.min(1800, 420 + burst * 140));
+  }, [
+    pumpCd,
+    myTeamSabotaged,
+    team,
+    isRed,
+    game.redBoosted,
+    game.blueBoosted,
+    roleId,
+    roleMeta,
+    nftHoldVerified,
+    reportCommunityPulls,
+  ]);
 
   // ── Special actions ─────────────────────────────────────────────────────────
 
@@ -455,6 +583,31 @@ function GameSession() {
         : 'Tie';
   const winnerIsRed = game.redScore > game.blueScore;
   const winnerIsBlue = game.blueScore > game.redScore;
+
+  const gmonadHud = useMemo(() => {
+    void raidNow;
+    const joinedMeta = joinedCommunityId ? getCommunity(joinedCommunityId) : null;
+    const nftMult = getNftStrengthMultiplier(nftHoldVerified);
+    const raidMult = team ? getRaidMultiplierForTeam(team) : 1;
+    const burstPreview = computePullBurstCount(nftMult, raidMult);
+    const raidBoostedSide = getRaidBoostedTeam();
+    const raidActive = !!(team && raidBoostedSide === team);
+    const allegianceLine =
+      joinedMeta && team
+        ? `${joinedMeta.emoji} ${joinedMeta.name} — fighting for ${team === TEAMS.RED ? 'RED' : 'BLUE'} on-chain`
+        : null;
+    const powerLine = team
+      ? [
+          checkingNft
+            ? 'Verifying NFT…'
+            : nftHoldVerified
+              ? `NFT-linked · ${nftMult}× · pullMany(${burstPreview}) — one tx`
+              : `NFT 1× · connect + NEXT_PUBLIC_NFT_* · pullMany(${burstPreview})`,
+          raidActive ? 'COMMUNITY RAID 2× WINDOW' : `Raids ${formatRaidHint()} (2× when your side is blessed)`,
+        ].join(' · ')
+      : null;
+    return { allegianceLine, powerLine };
+  }, [raidNow, joinedCommunityId, team, nftHoldVerified, checkingNft]);
 
   // ── RENDER ──────────────────────────────────────────────────────────────────
 
@@ -539,8 +692,13 @@ function GameSession() {
             className="flex flex-1 flex-col justify-center gap-8"
           >
             <div className="text-center">
-              <h1 className="mb-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl">Join the arena</h1>
-              <p className="text-sm text-white/45">Pick a display name. No wallet signature required.</p>
+              <p className="mb-2 font-orbitron text-[10px] font-bold uppercase tracking-[0.35em] text-violet-300/80">
+                The Gmonad War
+              </p>
+              <h1 className="mb-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl">Community Tug</h1>
+              <p className="text-sm text-white/45">
+                Pledge to a Monad crew. Your burner pulls for the rope; link main wallet for NFT power.
+              </p>
             </div>
 
             <div className="space-y-4">
@@ -554,13 +712,122 @@ function GameSession() {
                 placeholder="Optional — random if empty"
                 value={nickname}
                 onChange={e => setNickname(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && void handleNext()}
+                onKeyDown={e =>
+                  e.key === 'Enter' && selectedCommunity && selectedChainTeam && void handleNext()
+                }
                 className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3.5 text-center text-lg font-medium text-white placeholder:text-white/25 focus:border-white/25 focus:outline-none focus:ring-1 focus:ring-white/15"
               />
+
+              <div className="pt-1">
+                <label className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.2em] text-white/40">
+                  Rope side (on-chain)
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedChainTeam(TEAMS.RED)}
+                    className={[
+                      'rounded-2xl border-2 px-4 py-4 text-center transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30',
+                      selectedChainTeam === TEAMS.RED
+                        ? 'border-red-400 bg-red-950/50 shadow-[0_0_24px_rgba(239,68,68,0.25)]'
+                        : 'border-white/10 bg-white/[0.03] hover:border-red-500/40',
+                    ].join(' ')}
+                  >
+                    <span className="block text-2xl font-black tracking-tight text-red-400">RED</span>
+                    <span className="mt-1 block text-[11px] font-medium text-white/45">Halat — kırmızı taraf</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedChainTeam(TEAMS.BLUE)}
+                    className={[
+                      'rounded-2xl border-2 px-4 py-4 text-center transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30',
+                      selectedChainTeam === TEAMS.BLUE
+                        ? 'border-blue-400 bg-blue-950/50 shadow-[0_0_24px_rgba(59,130,246,0.25)]'
+                        : 'border-white/10 bg-white/[0.03] hover:border-blue-500/40',
+                    ].join(' ')}
+                  >
+                    <span className="block text-2xl font-black tracking-tight text-blue-400">BLUE</span>
+                    <span className="mt-1 block text-[11px] font-medium text-white/45">Halat — mavi taraf</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-1">
+                <label className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.2em] text-white/40">
+                  Crew (stats & NFT)
+                </label>
+                <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                  {GMONAD_COMMUNITIES.map((c) => {
+                    const sel = selectedCommunity === c.id;
+                    const borderSel =
+                      c.accent === 'purple'
+                        ? 'border-violet-400 bg-violet-950/40 shadow-[0_0_22px_rgba(167,139,250,0.2)]'
+                        : c.accent === 'emerald'
+                          ? 'border-emerald-400 bg-emerald-950/35 shadow-[0_0_22px_rgba(52,211,153,0.18)]'
+                          : c.accent === 'amber'
+                            ? 'border-amber-400 bg-amber-950/30 shadow-[0_0_22px_rgba(251,191,36,0.15)]'
+                            : 'border-fuchsia-400 bg-fuchsia-950/35 shadow-[0_0_22px_rgba(232,121,249,0.18)]';
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => setSelectedCommunity(c.id)}
+                        className={[
+                          'rounded-2xl border-2 px-3 py-3 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30',
+                          sel ? borderSel : 'border-white/10 bg-white/[0.03] hover:border-white/20',
+                        ].join(' ')}
+                      >
+                        <span className="flex items-center gap-2">
+                          <span className="text-xl">{c.emoji}</span>
+                          <span className="font-bold text-white">{c.name}</span>
+                        </span>
+                        <span className="mt-1 block text-[11px] leading-snug text-white/45">{c.short}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/35">
+                  Main wallet (NFT buff)
+                </p>
+                <p className="mb-3 text-[11px] leading-relaxed text-white/40">
+                  Connect the wallet that holds your crew&apos;s NFT — pulls from your burner get multiplied (set{' '}
+                  <code className="text-white/55">NEXT_PUBLIC_NFT_*</code> in env).
+                </p>
+                {!mainWallet ? (
+                  <button
+                    type="button"
+                    onClick={() => void connectBrowserWallet().then((a) => setMainWallet(a))}
+                    className="w-full rounded-xl border border-violet-500/35 bg-violet-500/10 py-2.5 text-sm font-semibold text-violet-100 transition hover:bg-violet-500/20"
+                  >
+                    Connect wallet
+                  </button>
+                ) : (
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="font-mono text-xs text-white/70">
+                      {mainWallet.slice(0, 6)}…{mainWallet.slice(-4)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void disconnectStoredMainWallet();
+                        setMainWallet(null);
+                      }}
+                      className="rounded-lg border border-white/15 px-3 py-1.5 text-[11px] font-medium text-white/55 hover:bg-white/5"
+                    >
+                      Disconnect
+                    </button>
+                  </div>
+                )}
+              </div>
+
               <button
                 type="button"
+                disabled={!selectedCommunity || !selectedChainTeam}
                 onClick={() => void handleNext()}
-                className="w-full rounded-xl bg-white py-3.5 text-sm font-semibold text-[#040408] transition hover:bg-white/90 active:scale-[0.99]"
+                className="w-full rounded-xl bg-white py-3.5 text-sm font-semibold text-[#040408] transition hover:bg-white/90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Continue
               </button>
@@ -653,6 +920,8 @@ function GameSession() {
               onSabotage={() => void handleSabotage()}
               onBoost={() => void handleBoost()}
               txStatus={txStatus}
+              allegianceLine={gmonadHud.allegianceLine}
+              powerLine={gmonadHud.powerLine}
             />
           </div>
         )}

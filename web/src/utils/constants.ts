@@ -18,20 +18,22 @@ export const CONTRACT_ABI = [
   "function SPECIAL_COOLDOWN() view returns (uint256)",
   "function playerTeam(address) view returns (uint8)",
   "function playerRole(address) view returns (uint8)",
+  "function playerCommunity(address) view returns (uint8)",
 
   // Batch views
   "function getGameInfo() view returns (uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256)",
-  "function getPlayerInfo(address) view returns (uint8,uint8,uint256,uint256)",
+  "function getPlayerInfo(address) view returns (uint8,uint8,uint8,uint256,uint256)",
 
   // Actions
-  "function join(uint8 team, string calldata nickname) external",
+  "function join(uint8 team, uint8 communityId, string calldata nickname) external",
   "function pull() external",
+  "function pullMany(uint8 n) external",
   "function boost() external",
   "function sabotage() external",
   "function resetGame() external",
 
   // Events  (team: 1=Red, 2=Blue)
-  "event PlayerJoined(address indexed player, uint8 team, uint8 role, string nickname)",
+  "event PlayerJoined(address indexed player, uint8 team, uint8 communityId, uint8 role, string nickname)",
   "event Pulled(address indexed player, uint8 team, uint256 redScore, uint256 blueScore)",
   "event Boosted(address indexed player, uint8 team, uint256 endTime)",
   "event Sabotaged(address indexed player, uint8 targetTeam, uint256 endTime)",

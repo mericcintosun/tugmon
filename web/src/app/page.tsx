@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
+import { CommunityStatsBoard } from "@/components/CommunityStatsBoard";
 
 export default function LandingPage() {
   const [appUrl, setAppUrl] = useState("");
@@ -42,8 +43,9 @@ export default function LandingPage() {
             Pull together. Win on-chain.
           </h1>
           <p className="mt-5 text-pretty text-base leading-relaxed text-white/55 sm:text-lg">
-            Tugmon is a minimal real-time arena: pick a side, tap to pull, and use roles like Engineer,
-            Saboteur, or Booster. No wallet pop-ups—your session is ready in seconds.
+            <span className="text-violet-200/90">The Gmonad War</span> turns the arena into a social
+            coordination experiment: pledge to a Monad crew, stress-test the chain with your burner, and
+            link your main wallet so NFTs buff your pulls.
           </p>
           <div className="mt-10 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:justify-center">
             <Link
@@ -59,6 +61,15 @@ export default function LandingPage() {
               Open live board
             </Link>
           </div>
+        </motion.section>
+
+        <motion.section
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.06 }}
+          className="mx-auto mt-14 w-full max-w-3xl rounded-3xl border border-violet-500/15 bg-gradient-to-br from-violet-950/40 via-[#0a0a10] to-fuchsia-950/25 px-5 py-8 sm:px-8"
+        >
+          <CommunityStatsBoard variant="full" showShare />
         </motion.section>
 
         <motion.section
