@@ -155,7 +155,7 @@ export default function TugmonDashboard() {
                 triggerFlash('yellow');
                 const curr = nextPlayers.get(addr) ?? { address: addr, nickname: '', team: teamNum, roleId: 3 as RoleId, pulls: 0, specials: 0 };
                 nextPlayers.set(addr, { ...curr, specials: curr.specials + 1 });
-                triggerSpotlight(addr, 'NITRO AKTİF!', '⚡', nextPlayers);
+                triggerSpotlight(addr, 'NITRO ACTIVE', '⚡', nextPlayers);
 
               } else if (parsed.name === 'Sabotaged') {
                 const addr       = parsed.args[0] as string;
@@ -170,7 +170,7 @@ export default function TugmonDashboard() {
                 triggerFlash('red');
                 const curr = nextPlayers.get(addr) ?? { address: addr, nickname: '', team: myTeam, roleId: 2 as RoleId, pulls: 0, specials: 0 };
                 nextPlayers.set(addr, { ...curr, specials: curr.specials + 1 });
-                triggerSpotlight(addr, targetTeam === 1 ? '🔴 KIRMIZI HACKLENDİ!' : '🔵 MAVİ HACKLENDİ!', '💣', nextPlayers);
+                triggerSpotlight(addr, targetTeam === 1 ? '🔴 RED TEAM FROZEN' : '🔵 BLUE TEAM FROZEN', '💣', nextPlayers);
 
               } else if (parsed.name === 'GameReset') {
                 setGame(prev => ({ ...prev, redScore: 0, blueScore: 0, redBoosted: false, blueBoosted: false, redSabotaged: false, blueSabotaged: false }));
@@ -232,17 +232,17 @@ export default function TugmonDashboard() {
   // ─────────────────────────────────────────────────────────
 
   if (loading) return (
-    <div className="min-h-screen bg-[#020205] flex items-center justify-center">
+    <div className="flex min-h-[50vh] flex-1 items-center justify-center bg-[#020205]">
       <div className="text-center space-y-6">
         <div className="w-16 h-16 border-4 border-t-indigo-500 border-r-transparent border-b-purple-500 border-l-transparent rounded-full animate-spin mx-auto" />
         <div className="text-3xl font-black italic text-white tracking-tighter animate-pulse">TUGMON ARENA</div>
-        <div className="text-sm text-gray-600">Bağlanıyor…</div>
+        <div className="text-sm text-gray-600">Connecting…</div>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-[#020205] text-white select-none overflow-hidden relative scanlines">
+    <div className="relative flex min-h-0 flex-1 select-none flex-col overflow-hidden bg-[#020205] text-white scanlines">
 
       {/* Background */}
       <div className="fixed inset-0 pointer-events-none">
@@ -270,7 +270,7 @@ export default function TugmonDashboard() {
         )}
       </AnimatePresence>
 
-      <div className="relative z-10 flex flex-col h-screen p-8 gap-6">
+      <div className="relative z-10 flex min-h-0 flex-1 flex-col gap-6 overflow-auto p-4 sm:p-8">
 
         {/* ── TOP BAR ── */}
         <div className="flex justify-between items-start">
@@ -306,7 +306,7 @@ export default function TugmonDashboard() {
             </motion.span>
             <div className="flex items-center gap-2 mt-1">
               <span className={`text-lg font-black uppercase tracking-[0.5em] ${game.redSabotaged ? 'text-blue-300 animate-pulse' : 'text-red-400/50'}`}>
-                {game.redSabotaged ? '❄️ HACKLENDİ' : '🔴 KIRMIZI'}
+                {game.redSabotaged ? '❄️ FROZEN' : '🔴 RED'}
               </span>
               {game.redBoosted && <span className="text-yellow-300 font-black animate-pulse text-xl">⚡ NITRO</span>}
             </div>
@@ -364,7 +364,7 @@ export default function TugmonDashboard() {
             <div className="flex items-center gap-2 mt-1 justify-end">
               {game.blueBoosted && <span className="text-yellow-300 font-black animate-pulse text-xl">NITRO ⚡</span>}
               <span className={`text-lg font-black uppercase tracking-[0.5em] ${game.blueSabotaged ? 'text-red-300 animate-pulse' : 'text-blue-400/50'}`}>
-                {game.blueSabotaged ? 'HACKLENDİ ❄️' : 'MAVİ 🔵'}
+                {game.blueSabotaged ? 'FROZEN ❄️' : 'BLUE 🔵'}
               </span>
             </div>
           </div>
@@ -416,13 +416,13 @@ export default function TugmonDashboard() {
         </div>
 
         {/* ── BOTTOM GRID ── */}
-        <div className="mt-auto grid grid-cols-3 gap-5">
+        <div className="mt-auto grid grid-cols-1 gap-5 md:grid-cols-3">
 
           {/* MVP Leaderboard */}
           <div className="col-span-1 bg-white/3 border border-white/5 rounded-2xl p-5 flex flex-col gap-3">
             <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">🏆 MVP BOARD</span>
             {top3.length === 0 ? (
-              <span className="text-xs text-gray-600 animate-pulse">İlk oyuncu bekleniyor...</span>
+              <span className="text-xs text-gray-600 animate-pulse">Waiting for players…</span>
             ) : top3.map((p, i) => {
               const meta = ROLE_META[p.roleId];
               const score = p.pulls + p.specials * 5;
@@ -442,7 +442,7 @@ export default function TugmonDashboard() {
               );
             })}
             <div className="mt-auto pt-2 border-t border-white/5 text-[9px] text-gray-700">
-              {players.size} oyuncu katıldı
+              {players.size} players joined
             </div>
           </div>
 
@@ -467,7 +467,7 @@ export default function TugmonDashboard() {
 
           {/* QR Code */}
           <div className="col-span-1 bg-white/3 border border-white/5 rounded-2xl p-5 flex flex-col items-center gap-3">
-            <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Katıl! Tara!</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">Scan to play</span>
             <div className="bg-white rounded-xl p-2">
               <QRCodeSVG
                 value={`${appUrl}/play`}

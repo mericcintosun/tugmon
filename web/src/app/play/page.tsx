@@ -271,33 +271,33 @@ function GameSession() {
       });
 
       // ── Always ensure wallet is funded (resume OR new join) ──────────────────
-      showStatus('Cüzdan kontrol ediliyor...', 'pending');
+      showStatus('Checking wallet…', 'pending');
       // Check balance first before deciding to fund
       const currentBal = await provider.getBalance(wallet.address);
       const MIN_BAL = ethers.parseEther('0.10');
 
       if (currentBal < MIN_BAL) {
-        showStatus('Cüzdan fonlanıyor... (1 kerelik)', 'pending');
+        showStatus('Funding wallet (one-time)…', 'pending');
         const fundResult = await fundBurnerWallet(wallet.address);
 
         if (fundResult.rateLimited) {
           // Rate limited AND wallet is empty — this shouldn't happen but handle gracefully
-          showStatus('❌ Cüzdan boş ve rate limit aktif. Biraz bekleyin.', 'err', 6000);
+          showStatus('❌ Wallet empty and rate limited. Try again shortly.', 'err', 6000);
           setPhase('nickname');
           return;
         }
 
         if (!fundResult.success && !fundResult.alreadyFunded) {
-          showStatus(`❌ ${fundResult.error || 'Fonlama başarısız'}`, 'err', 5000);
+          showStatus(`❌ ${fundResult.error || 'Funding failed'}`, 'err', 5000);
           setPhase('nickname');
           return;
         }
 
         // Poll on-chain balance until confirmed (up to 20 seconds)
-        showStatus('Bakiye bekleniyor...', 'pending');
+        showStatus('Waiting for balance…', 'pending');
         const funded = await waitForBalance(wallet.address, '0.08', 20000);
         if (!funded) {
-          showStatus('❌ Bakiye onaylanamadı. Tekrar deneyin.', 'err', 5000);
+          showStatus('❌ Balance not confirmed. Try again.', 'err', 5000);
           setPhase('nickname');
           return;
         }
@@ -327,7 +327,7 @@ function GameSession() {
 
       // 6. Join the arena
       setPhase('joining');
-      showStatus("Arena'ya katılınıyor...", 'pending');
+      showStatus('Joining arena…', 'pending');
 
       try {
         const tx = await contract.join(assignedTeam, nick);
@@ -348,7 +348,7 @@ function GameSession() {
 
       setTeam(assignedTeam);
       setRoleId(finalRole);
-      showStatus('✅ Oyuna girdin!', 'ok', 1500);
+      showStatus('✅ You are in!', 'ok', 1500);
 
       // 8. Start event subscription + polling
       subscribeEvents(new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider), assignedTeam);
@@ -361,7 +361,7 @@ function GameSession() {
 
     } catch (e: unknown) {
       const raw = e instanceof Error ? e.message : String(e);
-      showStatus(`❌ Bağlantı hatası: ${raw.slice(0, 60)}`, 'err', 5000);
+      showStatus(`❌ Connection error: ${raw.slice(0, 60)}`, 'err', 5000);
       setPhase('nickname');
     }
   }, [nickname, getProvider, subscribeEvents, pollGameState, pollLogs, refreshBalance, showStatus]);
@@ -391,7 +391,7 @@ function GameSession() {
     setPumpCd(true);
 
     const cx = window.innerWidth / 2;
-    const cy = window.innerHeight - 60;
+    const cy = Math.min(window.innerHeight * 0.68, window.innerHeight - 100);
     const engineerBonus = roleId === ROLE_ID.ENGINEER;
     const isBoostActive = isRed ? game.redBoosted : game.blueBoosted;
     const label = isBoostActive ? '⚡+2' : engineerBonus ? '+2' : '+1';
@@ -416,11 +416,11 @@ function GameSession() {
 
   const handleSabotage = useCallback(async () => {
     if (!arenaContractRef.current) return;
-    showStatus('Sabotaj!', 'pending');
+    showStatus('Sabotage…', 'pending');
     try {
       const tx = await arenaContractRef.current.sabotage();
       await tx.wait(1);
-      showStatus('✅ Sabotaj gönderildi!', 'ok', 1500);
+      showStatus('✅ Sabotage sent', 'ok', 1500);
     } catch (e: unknown) {
       const raw = e instanceof Error ? e.message : String(e);
       showStatus(`❌ ${raw.slice(0, 50)}`, 'err', 3000);
@@ -429,11 +429,11 @@ function GameSession() {
 
   const handleBoost = useCallback(async () => {
     if (!arenaContractRef.current) return;
-    showStatus('Nitro!', 'pending');
+    showStatus('Boost…', 'pending');
     try {
       const tx = await arenaContractRef.current.boost();
       await tx.wait(1);
-      showStatus('✅ Nitro aktif!', 'ok', 1500);
+      showStatus('✅ Boost active', 'ok', 1500);
     } catch (e: unknown) {
       const raw = e instanceof Error ? e.message : String(e);
       showStatus(`❌ ${raw.slice(0, 50)}`, 'err', 3000);
@@ -442,28 +442,29 @@ function GameSession() {
 
   // ── Round over winner ───────────────────────────────────────────────────────
 
-  const winner =
+  const winnerLabel =
     game.redScore > game.blueScore
-      ? '🔴 Kırmızı Takım'
+      ? 'Red Team'
       : game.blueScore > game.redScore
-      ? '🔵 Mavi Takım'
-      : 'Berabere';
+        ? 'Blue Team'
+        : 'Tie';
+  const winnerIsRed = game.redScore > game.blueScore;
+  const winnerIsBlue = game.blueScore > game.redScore;
 
   // ── RENDER ──────────────────────────────────────────────────────────────────
 
   return (
     <div
       className={[
-        phase === 'playing' ? 'h-screen w-screen overflow-hidden' : 'min-h-screen pb-20',
-        'relative select-none font-sans',
+        'relative flex min-h-0 flex-1 flex-col font-sans select-none',
         'bg-gradient-to-b',
         phase === 'playing' && team ? teamGrad[team] : 'from-[#0a0a12] to-[#040408]',
       ].join(' ')}
     >
-      {/* ── Wallet badge (top-right) ── */}
+      {/* ── Wallet badge ── */}
       {burnerAddress && (
-        <div className="absolute top-4 right-4 z-50">
-          <div className="px-3 py-1.5 bg-black/60 border border-white/10 rounded-xl text-[10px] font-mono text-gray-400 backdrop-blur">
+        <div className="absolute right-3 top-3 z-50 sm:right-6 sm:top-4">
+          <div className="rounded-lg border border-white/10 bg-black/50 px-2.5 py-1.5 font-mono text-[10px] text-white/55 backdrop-blur-md">
             {balance} MON · {burnerAddress.slice(0, 6)}…{burnerAddress.slice(-4)}
           </div>
         </div>
@@ -504,70 +505,71 @@ function GameSession() {
             >
               <div className="text-8xl mb-6">💣</div>
               <div
-                className="text-4xl font-black text-white tracking-widest animate-glitch"
+                className="text-4xl font-black tracking-widest text-white animate-glitch"
                 style={{ textShadow: '0 0 20px rgba(239,68,68,1)' }}
               >
-                SABOTE EDİLDİN!
+                YOU&apos;RE SABOTAGED
               </div>
-              <div className="text-xl text-red-200 mt-4 font-black">TIKLAMALAR GEÇERSİZ!</div>
+              <div className="mt-4 text-xl font-black text-red-200">PULL DISABLED</div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* ── Main content area ── */}
-      <div className={phase === 'playing' ? 'w-full h-screen' : 'max-w-md mx-auto min-h-screen flex flex-col px-4 pt-6'}>
-
+      {/* ── Main content ── */}
+      <div
+        className={[
+          'mx-auto flex w-full max-w-lg flex-1 flex-col px-4 pb-10 pt-14 sm:px-6',
+          phase === 'playing' ? 'max-w-2xl' : '',
+        ].join(' ')}
+      >
         {/* ── NICKNAME PHASE ── */}
         {phase === 'nickname' && (
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex-1 flex flex-col justify-center gap-6 mt-16"
+            className="flex flex-1 flex-col justify-center gap-8"
           >
-            {/* Logo */}
             <div className="text-center">
-              <h1 className="text-5xl font-black italic tracking-tighter text-white mb-2">TUGMON</h1>
-              <p className="text-sm text-gray-500 font-medium">Monad&apos;ın hızını hisset</p>
+              <h1 className="mb-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl">Join the arena</h1>
+              <p className="text-sm text-white/45">Pick a display name. No wallet signature required.</p>
             </div>
 
-            {/* Nickname input + button */}
             <div className="space-y-4">
-              <label className="block text-xs font-black text-gray-500 uppercase tracking-widest">
-                Savaş Alanı Rumuzun
+              <label className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-white/40">
+                Display name
               </label>
               <input
                 type="text"
                 maxLength={16}
                 autoFocus
-                placeholder="Rumuz gir (opsiyonel)"
+                placeholder="Optional — random if empty"
                 value={nickname}
                 onChange={e => setNickname(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && void handleNext()}
-                className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-center text-xl font-bold text-white placeholder-gray-700 focus:outline-none focus:border-indigo-500/60 transition-all"
+                className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3.5 text-center text-lg font-medium text-white placeholder:text-white/25 focus:border-white/25 focus:outline-none focus:ring-1 focus:ring-white/15"
               />
               <button
+                type="button"
                 onClick={() => void handleNext()}
-                className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 active:scale-95 rounded-2xl font-black text-lg uppercase tracking-widest shadow-[0_0_15px_rgba(79,70,229,0.5)] transition-all"
+                className="w-full rounded-xl bg-white py-3.5 text-sm font-semibold text-[#040408] transition hover:bg-white/90 active:scale-[0.99]"
               >
-                İleri →
+                Continue
               </button>
             </div>
 
-            {/* Info */}
-            <p className="text-center text-xs text-gray-600">
-              Giriş yaparken cüzdan imzası gerekmez.<br />
-              Geçici cüzdan otomatik oluşturulur.
+            <p className="text-center text-xs leading-relaxed text-white/35">
+              A temporary session wallet is created from your name. Funds may be topped up automatically on testnet.
             </p>
           </motion.div>
         )}
 
         {/* ── FUNDING / JOINING PHASE ── */}
         {(phase === 'funding' || phase === 'joining') && (
-          <div className="flex-1 flex flex-col items-center justify-center gap-6">
-            <div className="w-14 h-14 border-4 border-t-indigo-500 border-r-transparent border-b-purple-500 border-l-transparent rounded-full animate-spin" />
-            <div className="text-xl font-black text-white">
-              {phase === 'funding' ? 'Cüzdan hazırlanıyor...' : 'Ekibe katılınıyor...'}
+          <div className="flex flex-1 flex-col items-center justify-center gap-6">
+            <div className="h-14 w-14 animate-spin rounded-full border-4 border-t-white/80 border-r-transparent border-b-white/20 border-l-transparent" />
+            <div className="text-lg font-medium text-white/90">
+              {phase === 'funding' ? 'Preparing wallet…' : 'Joining team…'}
             </div>
             {txStatus && (
               <div className={`text-sm font-bold max-w-sm text-center px-4 py-2 rounded-xl border ${
@@ -590,33 +592,42 @@ function GameSession() {
 
         {/* ── ROUND OVER PHASE ── */}
         {phase === 'round_over' && (
-          <div className="flex-1 flex flex-col items-center justify-center gap-6 mt-16 text-center">
-            <motion.div initial={{ scale: 0.5 }} animate={{ scale: 1 }} className="text-6xl">
+          <div className="mt-8 flex flex-1 flex-col items-center justify-center gap-4 text-center">
+            <motion.div initial={{ scale: 0.5 }} animate={{ scale: 1 }} className="text-5xl">
               🏁
             </motion.div>
-            <h2 className="text-4xl font-black text-white uppercase">SÜRE DOLDU!</h2>
-            <div className="text-2xl font-bold mt-4">
-              Kazanan:{' '}
-              <span className={winner.includes('Kırmızı') ? 'text-red-500' : 'text-blue-500'}>
-                {winner}
+            <h2 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">Round over</h2>
+            <div className="mt-2 text-lg text-white/80">
+              Winner:{' '}
+              <span
+                className={
+                  winnerIsRed ? 'text-red-400' : winnerIsBlue ? 'text-blue-400' : 'text-white/50'
+                }
+              >
+                {winnerLabel}
               </span>
             </div>
-            <p className="text-gray-500 mt-4">Yeni el başlıyor...</p>
+            <p className="mt-2 text-sm text-white/40">Next round starting…</p>
           </div>
         )}
 
         {/* ── PLAYING PHASE ── */}
         {phase === 'playing' && team && (
-          <CanvasGame
-            game={game}
-            team={team}
-            roleId={roleId}
-            eventCount={eventCount}
-            onPull={handlePump}
-            onSabotage={() => void handleSabotage()}
-            onBoost={() => void handleBoost()}
-            txStatus={txStatus}
-          />
+          <div className="flex w-full flex-1 flex-col justify-center gap-4 pb-6 pt-2 sm:gap-6">
+            <p className="text-center text-[11px] font-medium uppercase tracking-[0.2em] text-white/35">
+              Match in progress
+            </p>
+            <CanvasGame
+              game={game}
+              team={team}
+              roleId={roleId}
+              eventCount={eventCount}
+              onPull={handlePump}
+              onSabotage={() => void handleSabotage()}
+              onBoost={() => void handleBoost()}
+              txStatus={txStatus}
+            />
+          </div>
         )}
       </div>
     </div>

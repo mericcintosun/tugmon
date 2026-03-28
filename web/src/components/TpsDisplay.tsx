@@ -63,7 +63,7 @@ const TpsDisplay: React.FC<TpsDisplayProps> = ({ eventCount, compact = false }) 
 
   return (
     <div className="flex flex-col items-end gap-1">
-      <div className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.3em]">MONAD AĞ HIZI</div>
+      <div className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-500">MONAD THROUGHPUT</div>
       <div className="flex items-baseline gap-2">
         <span
           className="font-orbitron font-black text-white tabular-nums"

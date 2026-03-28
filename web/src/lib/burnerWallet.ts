@@ -39,7 +39,7 @@ export async function fundBurnerWallet(address: string): Promise<{
       error: data.error as string | undefined,
     };
   } catch (e) {
-    return { success: false, error: "Ağ hatası: " + String(e).slice(0, 60) };
+    return { success: false, error: "Network error: " + String(e).slice(0, 60) };
   }
 }
 
