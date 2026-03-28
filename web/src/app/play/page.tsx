@@ -620,7 +620,7 @@ function GameSession() {
   return (
     <div
       className={[
-        'relative flex min-h-0 flex-1 flex-col font-sans select-none',
+        'relative flex min-h-full flex-col font-sans select-none',
         'bg-gradient-to-b',
         phase === "playing" && team ? teamGrad[team] : "from-surface-container-low to-background",
       ].join(' ')}
@@ -686,7 +686,7 @@ function GameSession() {
       {/* ── Main content ── */}
       <div
         className={[
-          'page-shell flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain pb-10 pt-14 sm:pt-16',
+          'page-shell flex flex-col pb-10 pt-14 sm:pt-16',
           phase === 'playing' ? 'page-shell--game-wide' : 'page-shell--game',
         ].join(' ')}
       >
